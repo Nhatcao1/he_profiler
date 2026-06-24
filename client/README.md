@@ -5,7 +5,7 @@ The client is the data-owner side.
 It owns:
 
 ```text
-life_context_code plaintext
+client_signal_code plaintext
 BinFHE secret key
 decrypted adjusted_risk_code
 ```
@@ -14,7 +14,7 @@ It sends:
 
 ```text
 assessment_id
-encrypted life_context_code
+encrypted client_signal_code
 BinFHE context/config
 BinFHE evaluation key
 lut_version
@@ -24,7 +24,7 @@ It must not send:
 
 ```text
 secret key
-plaintext life_context_code
+plaintext client_signal_code
 plaintext adjusted_risk_code
 ```
 
@@ -33,7 +33,7 @@ plaintext adjusted_risk_code
 ```text
 encrypt_request
   read client/data/client_inputs.csv
-  encrypt life_context_code
+  encrypt client_signal_code
   write client/outgoing/encrypted_requests.jsonl
 
 decrypt_response

@@ -7,9 +7,9 @@ Rule-based risk profiling with a BinFHE lookup-table adjustment.
 ```text
 client/
   Runs on the data owner machine.
-  Owns plaintext private life-context input.
+  Owns plaintext private client-side transaction signal input.
   Creates OpenFHE/BinFHE keys.
-  Encrypts life_context_code.
+  Encrypts client_signal_code.
   Decrypts adjusted_risk_code response.
 
 server/
@@ -31,11 +31,11 @@ server: OpenFHE for ciphertext deserialization and EvalFunc LUT calculation
 
 ```text
 1. Server builds risk_assessments.sqlite from CSV data.
-2. Client prepares assessment_id + private life_context_code rows.
-3. Client encrypts life_context_code.
+2. Client prepares assessment_id + private client_signal_code rows.
+3. Client encrypts client_signal_code.
 4. Server looks up base_risk_code by assessment_id.
 5. Server selects LUT for that base_risk_code.
-6. Server computes Enc(life_context_code) -> Enc(adjusted_risk_code).
+6. Server computes Enc(client_signal_code) -> Enc(adjusted_risk_code).
 7. Client decrypts adjusted_risk_code.
 8. Plain LUT output and decrypted HE output are compared.
 ```
@@ -45,7 +45,7 @@ server: OpenFHE for ciphertext deserialization and EvalFunc LUT calculation
 ```text
 Risk model: rule-based only
 Encrypted primitive: BinFHE LUT only
-Input domain: life_context_code 0..15
+Input domain: client_signal_code 0..15
 Output domain: adjusted_risk_code 0..15
 No ML
 No CKKS

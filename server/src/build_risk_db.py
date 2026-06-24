@@ -131,6 +131,8 @@ def build_database(args: argparse.Namespace) -> list[tuple[int, int]]:
             )
 
             if len(sample_inputs) < 16:
+                # Private client/app signal bucket for this transaction.
+                # Example meaning: device/session anomaly, retry pressure, or app-side warning.
                 sample_inputs.append((assessment_id, (assessment_id * 5 + 3) % 16))
 
         conn.commit()
@@ -142,7 +144,7 @@ def write_client_inputs(path: Path, rows: list[tuple[int, int]]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("w", newline="") as f:
         writer = csv.writer(f)
-        writer.writerow(["assessment_id", "life_context_code"])
+        writer.writerow(["assessment_id", "client_signal_code"])
         writer.writerows(rows)
 
 

@@ -21,25 +21,25 @@ int clamp_code(int value) {
     return value;
 }
 
-int adjusted_code_plain(int base_risk_code, int life_context_code) {
+int adjusted_code_plain(int base_risk_code, int client_signal_code) {
     if (base_risk_code < 0 || base_risk_code >= kDomain) {
         throw std::runtime_error("base_risk_code must be in 0..15");
     }
-    if (life_context_code < 0 || life_context_code >= kDomain) {
-        throw std::runtime_error("life_context_code must be in 0..15");
+    if (client_signal_code < 0 || client_signal_code >= kDomain) {
+        throw std::runtime_error("client_signal_code must be in 0..15");
     }
 
-    const int life_pressure = life_context_code / 4;
-    const int life_offset = (life_context_code % 4 == 3) ? 1 : 0;
-    return clamp_code(base_risk_code + life_pressure + life_offset);
+    const int signal_pressure = client_signal_code / 4;
+    const int signal_offset = (client_signal_code % 4 == 3) ? 1 : 0;
+    return clamp_code(base_risk_code + signal_pressure + signal_offset);
 }
 
 void print_lut_matrix() {
-    std::cout << "base_risk_code,life_context_code,adjusted_risk_code\n";
+    std::cout << "base_risk_code,client_signal_code,adjusted_risk_code\n";
     for (int base = 0; base < kDomain; ++base) {
-        for (int life = 0; life < kDomain; ++life) {
-            std::cout << base << ',' << life << ','
-                      << adjusted_code_plain(base, life) << '\n';
+        for (int signal = 0; signal < kDomain; ++signal) {
+            std::cout << base << ',' << signal << ','
+                      << adjusted_code_plain(base, signal) << '\n';
         }
     }
 }

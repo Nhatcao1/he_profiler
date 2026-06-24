@@ -14,7 +14,7 @@ It receives:
 
 ```text
 assessment_id
-encrypted life_context_code
+encrypted client_signal_code
 BinFHE context/config
 BinFHE evaluation key
 lut_version
