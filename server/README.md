@@ -1,35 +1,38 @@
 # Server
 
-The server is the organization-prefix database and encrypted-evaluation side.
+The server is the company-directory and encrypted-evaluation side.
 
 It owns:
 
 ```text
-phone_org.sqlite
-phone_prefix_code -> organization_code mappings
-organization LUT rules
+company_directory.sqlite
+directory_code -> company_code mappings
+BinFHE LUT rules
 ```
 
 It receives:
 
 ```text
-encrypted phone_prefix_code
+request_id
+lut_version
+encrypted directory_code
 BinFHE context/config
 BinFHE evaluation key
-lut_version
 ```
 
 It returns:
 
 ```text
-encrypted organization_code
+request_id
+lut_version
+encrypted company_code
 ```
 
 ## Database Build
 
 ```bash
-python3 src/build_phone_org_db.py \
-  --out db/phone_org.sqlite \
+python3 src/build_company_directory_db.py \
+  --out db/company_directory.sqlite \
   --client-inputs ../client/data/client_inputs.csv
 ```
 

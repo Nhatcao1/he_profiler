@@ -1,19 +1,36 @@
 # HE Profiler
 
-Phone-prefix organization lookup with a BinFHE lookup table.
+Private company-directory lookup with a BinFHE lookup table.
 
-This demo answers a deliberately simple question:
+This demo answers a deliberately small question:
 
 ```text
-Given a phone number, which organization/operator bucket does its prefix map to?
+Given a local phone number that maps to a known directory row,
+which company code does that row belong to?
 ```
 
-The phone number stays on the client side. The client converts it to a tiny
-`phone_prefix_code` and encrypts that code. The server runs a BinFHE LUT and
-returns an encrypted `organization_code`.
+The client keeps the phone number local. The client sends only
+`Enc(directory_code)`. The server evaluates a BinFHE LUT over its company
+directory and returns `Enc(company_code)`.
 
-The included prefix data is synthetic demo data, not an authoritative telecom
+The included directory data is synthetic demo data, not an authoritative
 registry.
+
+## Honest Scope
+
+This is not full private search over arbitrary phone numbers.
+
+```text
+Supported now:
+  Enc(directory_code 0..15) -> BinFHE LUT -> Enc(company_code)
+
+Not supported in this tiny demo:
+  Enc(full phone number) -> private database search
+```
+
+Full private phone-number search would need PIR, PSI, or a much heavier
+encrypted equality/search protocol. This project intentionally starts with the
+small LUT primitive.
 
 ## Project Split
 
@@ -21,14 +38,14 @@ registry.
 client/
   Runs on the data owner machine.
   Owns plaintext phone_number.
-  Derives phone_prefix_code 0..15.
+  Owns plaintext directory_code for demo/enrollment.
   Creates OpenFHE/BinFHE keys.
-  Encrypts phone_prefix_code.
-  Decrypts organization_code response.
+  Encrypts directory_code.
+  Decrypts company_code response.
 
 server/
-  Runs near the organization-prefix database.
-  Owns phone_prefix_code -> organization_code LUT records.
+  Runs near the company-directory database.
+  Owns directory_code -> company_code LUT records.
   Receives ciphertext requests and public evaluation material.
   Runs BinFHE LUT evaluation.
   Returns ciphertext responses.
@@ -44,13 +61,14 @@ server: OpenFHE for ciphertext deserialization and EvalFunc LUT calculation
 ## First Demo Shape
 
 ```text
-1. Server builds phone_org.sqlite with synthetic prefix mappings.
-2. Client prepares local phone_number rows.
-3. Client converts phone_number -> phone_prefix_code.
-4. Client encrypts phone_prefix_code.
-5. Server computes Enc(phone_prefix_code) -> Enc(organization_code).
-6. Client decrypts organization_code.
-7. Plain LUT output and decrypted HE output are compared.
+1. Server builds company_directory.sqlite with synthetic records.
+2. Client prepares local phone_number + directory_code rows.
+3. Client encrypts directory_code.
+4. Client sends Enc(directory_code), context, and eval key.
+5. Server computes Enc(directory_code) -> Enc(company_code).
+6. Server returns Enc(company_code).
+7. Client decrypts company_code and maps it to company_name locally.
+8. Plain LUT output and decrypted HE output are compared.
 ```
 
 Diagram:
@@ -59,18 +77,39 @@ Diagram:
 ARCHITECTURE_DIAGRAM.md
 ```
 
+## Server Data
+
+```text
+company_directory
+  directory_code
+  phone_number_masked
+  phone_number_sha256
+  company_code
+  company_name
+  registry_status
+```
+
+Server uses this table to build:
+
+```text
+directory_code -> company_code LUT
+```
+
+The server knows the directory, but it does not see which `directory_code` was
+queried when the input is encrypted.
+
 ## Code Meaning
 
 Input:
 
 ```text
-phone_prefix_code 0..15
+directory_code 0..15
 ```
 
 Output:
 
 ```text
-organization_code 0..7
+company_code 0..8
 
 0 Unknown
 1 Viettel
@@ -78,21 +117,47 @@ organization_code 0..7
 3 MobiFone
 4 Vietnamobile
 5 Gmobile
-6 Landline
-7 Other Registered
+6 Hanoi Landline
+7 HCMC Landline
+8 Other Registered
 ```
+
+## Send Format
+
+First file-based request shape:
+
+```json
+{"request_id":"req-0001","lut_version":"synthetic-v1","ct_directory_code":"<serialized BinFHE ciphertext>"}
+```
+
+First file-based response shape:
+
+```json
+{"request_id":"req-0001","lut_version":"synthetic-v1","ct_company_code":"<serialized BinFHE ciphertext>"}
+```
+
+OpenFHE deployments normally serialize:
+
+```text
+crypto context / parameters
+public evaluation or bootstrapping key material
+ciphertexts
+```
+
+The secret key stays on the client.
 
 ## Current Scope
 
 ```text
-Data model: synthetic phone-prefix organization mapping
+Data model: synthetic company directory
 Encrypted primitive: BinFHE LUT only
-Input domain: phone_prefix_code 0..15
-Output domain: organization_code 0..7
+Input domain: directory_code 0..15
+Output domain: company_code 0..8
 No ML
 No CKKS
 No encrypted joins
 No raw phone-number encryption
+No arbitrary private phone-number search
 ```
 
 ## Build Skeletons
@@ -120,7 +185,7 @@ When OpenFHE is installed on the machine/container, switch the flag:
 ## Generate Server DB
 
 ```bash
-python3 server/src/build_phone_org_db.py \
-  --out server/db/phone_org.sqlite \
+python3 server/src/build_company_directory_db.py \
+  --out server/db/company_directory.sqlite \
   --client-inputs client/data/client_inputs.csv
 ```

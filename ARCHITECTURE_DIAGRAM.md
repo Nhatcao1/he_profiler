@@ -3,59 +3,91 @@
 ## Flow
 
 ```text
-Server synthetic prefix data -> phone_org.sqlite
-Client phone number -> phone_prefix_code -> BinFHE encryption
-Server LUT evaluation -> encrypted organization code
-Client decrypts organization code
+Server company directory -> directory_code -> company_code LUT
+Client phone number stays local
+Client sends Enc(directory_code)
+Server evaluates BinFHE LUT
+Client decrypts company_code and maps it to company_name
 ```
 
 ## Mermaid
 
 ```mermaid
 flowchart TD
-    S[synthetic prefix mappings] --> DB[(phone_org.sqlite)]
-    DB --> LUT[phone_prefix_code -> organization_code LUT]
+    PHONE[phone_number local on client] --> DC[directory_code local on client]
+    DC --> ENC[Client encrypts directory_code]
+    ENC --> CT[Enc directory_code]
 
-    PHONE[phone_number local on client] --> PREFIX[derive phone_prefix_code 0..15]
-    PREFIX --> ENC[Client encrypts phone_prefix_code]
-    ENC --> CT[Enc phone_prefix_code]
-
+    DIR[(company_directory.sqlite)] --> LUT[directory_code -> company_code LUT]
     CT --> EVAL[BinFHE EvalFunc]
     LUT --> EVAL
-    EVAL --> OUT[Enc organization_code]
+    EVAL --> OUT[Enc company_code]
     OUT --> DEC[Client decrypts]
-    DEC --> FINAL[organization_code 0..7]
+    DEC --> CODE[company_code 0..8]
+    CODE --> NAME[company_name local display]
 ```
 
-## Boundary
+## Wire Boundary
 
 ```text
-Client sends:
-  Enc(phone_prefix_code)
+Client sends to server:
+  request_id
+  lut_version
+  Enc(directory_code)
   BinFHE context/config
   BinFHE evaluation key
-  LUT version
 
-Server returns:
-  Enc(organization_code)
-
-Client keeps private:
-  secret key
-  plaintext phone_number
-  plaintext phone_prefix_code
-  decrypted organization_code
+Server returns to client:
+  request_id
+  lut_version
+  Enc(company_code)
 ```
+
+## Client Keeps Private
+
+```text
+secret key
+plaintext phone_number
+plaintext directory_code
+decrypted company_code
+displayed company_name
+```
+
+## Server Sees
+
+```text
+company_directory.sqlite
+full directory_code -> company_code LUT
+request_id
+lut_version
+encrypted input ciphertext
+encrypted output ciphertext
+public/evaluation key material
+```
+
+The server does not see which directory row was queried because it never sees
+plaintext `directory_code` or `phone_number`.
+
+## Important Limit
+
+```text
+This demo is private LUT evaluation, not full private search.
+```
+
+For a real arbitrary phone-number search where the client only has a phone
+number and no directory code, use PIR, PSI, or encrypted equality/search.
 
 ## Codes
 
 ```text
-organization_code:
+company_code:
   0 Unknown
   1 Viettel
   2 VNPT/VinaPhone
   3 MobiFone
   4 Vietnamobile
   5 Gmobile
-  6 Landline
-  7 Other Registered
+  6 Hanoi Landline
+  7 HCMC Landline
+  8 Other Registered
 ```

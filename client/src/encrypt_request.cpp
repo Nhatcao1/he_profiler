@@ -9,13 +9,13 @@
 
 namespace {
 
-int parse_phone_prefix_code(int argc, char** argv) {
+int parse_directory_code(int argc, char** argv) {
     if (argc < 2) {
         return 3;
     }
     const int value = std::stoi(argv[1]);
     if (value < 0 || value > 15) {
-        throw std::runtime_error("phone_prefix_code must be in 0..15");
+        throw std::runtime_error("directory_code must be in 0..15");
     }
     return value;
 }
@@ -24,7 +24,7 @@ int parse_phone_prefix_code(int argc, char** argv) {
 
 int main(int argc, char** argv) {
     try {
-        const int phone_prefix_code = parse_phone_prefix_code(argc, argv);
+        const int directory_code = parse_directory_code(argc, argv);
 
 #ifdef HE_PROFILER_WITH_OPENFHE
         using lbcrypto::BinFHEContext;
@@ -44,7 +44,7 @@ int main(int argc, char** argv) {
         const auto plaintext_modulus = cc.GetMaxPlaintextSpace().ConvertToInt();
         auto ciphertext = cc.Encrypt(
             secret_key,
-            static_cast<LWEPlaintext>(phone_prefix_code),
+            static_cast<LWEPlaintext>(directory_code),
             LARGE_DIM,
             plaintext_modulus);
 
@@ -52,12 +52,12 @@ int main(int argc, char** argv) {
         cc.Decrypt(secret_key, ciphertext, &roundtrip, plaintext_modulus);
 
         std::cout << "OpenFHE client smoke test ok\n";
-        std::cout << "phone_prefix_code=" << phone_prefix_code << "\n";
+        std::cout << "directory_code=" << directory_code << "\n";
         std::cout << "roundtrip=" << roundtrip << "\n";
         std::cout << "next: serialize context, eval key, and ciphertext request\n";
 #else
         std::cout << "OpenFHE disabled; client skeleton only\n";
-        std::cout << "phone_prefix_code=" << phone_prefix_code << "\n";
+        std::cout << "directory_code=" << directory_code << "\n";
         std::cout << "configure with -DHE_PROFILER_WITH_OPENFHE=ON to encrypt\n";
 #endif
 

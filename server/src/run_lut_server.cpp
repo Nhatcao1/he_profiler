@@ -11,7 +11,7 @@ namespace {
 
 constexpr int kDomain = 16;
 
-constexpr std::array<int, kDomain> kOrganizationByPrefixCode = {
+constexpr std::array<int, kDomain> kCompanyByDirectoryCode = {
     0,  // unknown
     1,  // Viettel 096
     1,  // Viettel 097
@@ -26,22 +26,22 @@ constexpr std::array<int, kDomain> kOrganizationByPrefixCode = {
     4,  // Vietnamobile 092
     5,  // Gmobile 099
     6,  // Landline 024
-    6,  // Landline 028
-    7,  // Other registered
+    7,  // Landline 028
+    8,  // Other registered
 };
 
-int organization_code_plain(int phone_prefix_code) {
-    if (phone_prefix_code < 0 || phone_prefix_code >= kDomain) {
-        throw std::runtime_error("phone_prefix_code must be in 0..15");
+int company_code_plain(int directory_code) {
+    if (directory_code < 0 || directory_code >= kDomain) {
+        throw std::runtime_error("directory_code must be in 0..15");
     }
-    return kOrganizationByPrefixCode[phone_prefix_code];
+    return kCompanyByDirectoryCode[directory_code];
 }
 
 void print_lut_matrix() {
-    std::cout << "phone_prefix_code,organization_code\n";
-    for (int prefix_code = 0; prefix_code < kDomain; ++prefix_code) {
-        std::cout << prefix_code << ','
-                  << organization_code_plain(prefix_code) << '\n';
+    std::cout << "directory_code,company_code\n";
+    for (int directory_code = 0; directory_code < kDomain; ++directory_code) {
+        std::cout << directory_code << ','
+                  << company_code_plain(directory_code) << '\n';
     }
 }
 

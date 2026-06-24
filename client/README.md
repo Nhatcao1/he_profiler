@@ -6,18 +6,20 @@ It owns:
 
 ```text
 phone_number plaintext
-phone_prefix_code plaintext
+directory_code plaintext
 BinFHE secret key
-decrypted organization_code
+decrypted company_code
+displayed company_name
 ```
 
 It sends:
 
 ```text
-encrypted phone_prefix_code
+request_id
+lut_version
+encrypted directory_code
 BinFHE context/config
 BinFHE evaluation key
-lut_version
 ```
 
 It must not send:
@@ -25,8 +27,8 @@ It must not send:
 ```text
 secret key
 plaintext phone_number
-plaintext phone_prefix_code
-plaintext organization_code
+plaintext directory_code
+plaintext company_code
 ```
 
 ## First Code Targets
@@ -34,11 +36,11 @@ plaintext organization_code
 ```text
 encrypt_request
   read client/data/client_inputs.csv
-  encrypt phone_prefix_code
+  encrypt directory_code
   write client/outgoing/encrypted_requests.jsonl
 
 decrypt_response
   read client/incoming/encrypted_responses.jsonl
-  decrypt organization_code
+  decrypt company_code
   compare with plaintext expected output for demo QA
 ```
