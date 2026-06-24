@@ -40,6 +40,12 @@ server: OpenFHE for ciphertext deserialization and EvalFunc LUT calculation
 8. Plain LUT output and decrypted HE output are compared.
 ```
 
+Diagram:
+
+```text
+ARCHITECTURE_DIAGRAM.md
+```
+
 ## Current Scope
 
 ```text
