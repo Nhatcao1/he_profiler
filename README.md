@@ -77,6 +77,12 @@ Diagram:
 ARCHITECTURE_DIAGRAM.md
 ```
 
+Protocol flow:
+
+```text
+PRIVATE_COMPANY_LOOKUP_FLOW.md
+```
+
 ## Server Data
 
 ```text
