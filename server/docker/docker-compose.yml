@@ -1,0 +1,11 @@
+services:
+  he-profiler-server:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    working_dir: /workspace/server
+    volumes:
+      - ..:/workspace/server
+      - ../../client/outgoing:/workspace/server/incoming
+      - ../../client/incoming:/workspace/server/outgoing
+    command: bash
