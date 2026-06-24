@@ -1,20 +1,34 @@
 # HE Profiler
 
-Rule-based risk profiling with a BinFHE lookup-table adjustment.
+Phone-prefix organization lookup with a BinFHE lookup table.
+
+This demo answers a deliberately simple question:
+
+```text
+Given a phone number, which organization/operator bucket does its prefix map to?
+```
+
+The phone number stays on the client side. The client converts it to a tiny
+`phone_prefix_code` and encrypts that code. The server runs a BinFHE LUT and
+returns an encrypted `organization_code`.
+
+The included prefix data is synthetic demo data, not an authoritative telecom
+registry.
 
 ## Project Split
 
 ```text
 client/
   Runs on the data owner machine.
-  Owns plaintext private client-side transaction signal input.
+  Owns plaintext phone_number.
+  Derives phone_prefix_code 0..15.
   Creates OpenFHE/BinFHE keys.
-  Encrypts client_signal_code.
-  Decrypts adjusted_risk_code response.
+  Encrypts phone_prefix_code.
+  Decrypts organization_code response.
 
 server/
-  Runs near the risk-assessment database.
-  Owns base_risk_code records.
+  Runs near the organization-prefix database.
+  Owns phone_prefix_code -> organization_code LUT records.
   Receives ciphertext requests and public evaluation material.
   Runs BinFHE LUT evaluation.
   Returns ciphertext responses.
@@ -30,14 +44,13 @@ server: OpenFHE for ciphertext deserialization and EvalFunc LUT calculation
 ## First Demo Shape
 
 ```text
-1. Server builds risk_assessments.sqlite from CSV data.
-2. Client prepares assessment_id + private client_signal_code rows.
-3. Client encrypts client_signal_code.
-4. Server looks up base_risk_code by assessment_id.
-5. Server selects LUT for that base_risk_code.
-6. Server computes Enc(client_signal_code) -> Enc(adjusted_risk_code).
-7. Client decrypts adjusted_risk_code.
-8. Plain LUT output and decrypted HE output are compared.
+1. Server builds phone_org.sqlite with synthetic prefix mappings.
+2. Client prepares local phone_number rows.
+3. Client converts phone_number -> phone_prefix_code.
+4. Client encrypts phone_prefix_code.
+5. Server computes Enc(phone_prefix_code) -> Enc(organization_code).
+6. Client decrypts organization_code.
+7. Plain LUT output and decrypted HE output are compared.
 ```
 
 Diagram:
@@ -46,16 +59,40 @@ Diagram:
 ARCHITECTURE_DIAGRAM.md
 ```
 
+## Code Meaning
+
+Input:
+
+```text
+phone_prefix_code 0..15
+```
+
+Output:
+
+```text
+organization_code 0..7
+
+0 Unknown
+1 Viettel
+2 VNPT/VinaPhone
+3 MobiFone
+4 Vietnamobile
+5 Gmobile
+6 Landline
+7 Other Registered
+```
+
 ## Current Scope
 
 ```text
-Risk model: rule-based only
+Data model: synthetic phone-prefix organization mapping
 Encrypted primitive: BinFHE LUT only
-Input domain: client_signal_code 0..15
-Output domain: adjusted_risk_code 0..15
+Input domain: phone_prefix_code 0..15
+Output domain: organization_code 0..7
 No ML
 No CKKS
 No encrypted joins
+No raw phone-number encryption
 ```
 
 ## Build Skeletons
@@ -83,10 +120,7 @@ When OpenFHE is installed on the machine/container, switch the flag:
 ## Generate Server DB
 
 ```bash
-python3 server/src/build_risk_db.py \
-  --transactions /path/to/transactions.csv \
-  --customers /path/to/customers.csv \
-  --out server/db/risk_assessments.sqlite \
-  --client-inputs client/data/client_inputs.csv \
-  --limit 1000
+python3 server/src/build_phone_org_db.py \
+  --out server/db/phone_org.sqlite \
+  --client-inputs client/data/client_inputs.csv
 ```

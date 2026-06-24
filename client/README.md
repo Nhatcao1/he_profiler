@@ -5,16 +5,16 @@ The client is the data-owner side.
 It owns:
 
 ```text
-client_signal_code plaintext
+phone_number plaintext
+phone_prefix_code plaintext
 BinFHE secret key
-decrypted adjusted_risk_code
+decrypted organization_code
 ```
 
 It sends:
 
 ```text
-assessment_id
-encrypted client_signal_code
+encrypted phone_prefix_code
 BinFHE context/config
 BinFHE evaluation key
 lut_version
@@ -24,8 +24,9 @@ It must not send:
 
 ```text
 secret key
-plaintext client_signal_code
-plaintext adjusted_risk_code
+plaintext phone_number
+plaintext phone_prefix_code
+plaintext organization_code
 ```
 
 ## First Code Targets
@@ -33,11 +34,11 @@ plaintext adjusted_risk_code
 ```text
 encrypt_request
   read client/data/client_inputs.csv
-  encrypt client_signal_code
+  encrypt phone_prefix_code
   write client/outgoing/encrypted_requests.jsonl
 
 decrypt_response
   read client/incoming/encrypted_responses.jsonl
-  decrypt adjusted_risk_code
+  decrypt organization_code
   compare with plaintext expected output for demo QA
 ```

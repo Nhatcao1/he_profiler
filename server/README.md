@@ -1,20 +1,19 @@
 # Server
 
-The server is the database and encrypted-evaluation side.
+The server is the organization-prefix database and encrypted-evaluation side.
 
 It owns:
 
 ```text
-risk_assessments.sqlite
-base_risk_code
-adjustment LUT rules
+phone_org.sqlite
+phone_prefix_code -> organization_code mappings
+organization LUT rules
 ```
 
 It receives:
 
 ```text
-assessment_id
-encrypted client_signal_code
+encrypted phone_prefix_code
 BinFHE context/config
 BinFHE evaluation key
 lut_version
@@ -23,18 +22,15 @@ lut_version
 It returns:
 
 ```text
-encrypted adjusted_risk_code
+encrypted organization_code
 ```
 
 ## Database Build
 
 ```bash
-python3 src/build_risk_db.py \
-  --transactions ../../utility_bench/data/generated/medium_100k/transactions.csv \
-  --customers ../../utility_bench/data/generated/medium_100k/customers.csv \
-  --out db/risk_assessments.sqlite \
-  --client-inputs ../client/data/client_inputs.csv \
-  --limit 1000
+python3 src/build_phone_org_db.py \
+  --out db/phone_org.sqlite \
+  --client-inputs ../client/data/client_inputs.csv
 ```
 
 ## Docker Compose

@@ -11,36 +11,37 @@ namespace {
 
 constexpr int kDomain = 16;
 
-int clamp_code(int value) {
-    if (value < 0) {
-        return 0;
-    }
-    if (value > 15) {
-        return 15;
-    }
-    return value;
-}
+constexpr std::array<int, kDomain> kOrganizationByPrefixCode = {
+    0,  // unknown
+    1,  // Viettel 096
+    1,  // Viettel 097
+    1,  // Viettel 098
+    1,  // Viettel 086
+    2,  // VNPT/VinaPhone 091
+    2,  // VNPT/VinaPhone 094
+    2,  // VNPT/VinaPhone 088
+    3,  // MobiFone 090
+    3,  // MobiFone 093
+    3,  // MobiFone 089
+    4,  // Vietnamobile 092
+    5,  // Gmobile 099
+    6,  // Landline 024
+    6,  // Landline 028
+    7,  // Other registered
+};
 
-int adjusted_code_plain(int base_risk_code, int client_signal_code) {
-    if (base_risk_code < 0 || base_risk_code >= kDomain) {
-        throw std::runtime_error("base_risk_code must be in 0..15");
+int organization_code_plain(int phone_prefix_code) {
+    if (phone_prefix_code < 0 || phone_prefix_code >= kDomain) {
+        throw std::runtime_error("phone_prefix_code must be in 0..15");
     }
-    if (client_signal_code < 0 || client_signal_code >= kDomain) {
-        throw std::runtime_error("client_signal_code must be in 0..15");
-    }
-
-    const int signal_pressure = client_signal_code / 4;
-    const int signal_offset = (client_signal_code % 4 == 3) ? 1 : 0;
-    return clamp_code(base_risk_code + signal_pressure + signal_offset);
+    return kOrganizationByPrefixCode[phone_prefix_code];
 }
 
 void print_lut_matrix() {
-    std::cout << "base_risk_code,client_signal_code,adjusted_risk_code\n";
-    for (int base = 0; base < kDomain; ++base) {
-        for (int signal = 0; signal < kDomain; ++signal) {
-            std::cout << base << ',' << signal << ','
-                      << adjusted_code_plain(base, signal) << '\n';
-        }
+    std::cout << "phone_prefix_code,organization_code\n";
+    for (int prefix_code = 0; prefix_code < kDomain; ++prefix_code) {
+        std::cout << prefix_code << ','
+                  << organization_code_plain(prefix_code) << '\n';
     }
 }
 

@@ -3,50 +3,59 @@
 ## Flow
 
 ```text
-Server CSV data -> rule-based profiler -> risk_assessments.sqlite
-Client signal -> BinFHE encryption -> server LUT evaluation -> encrypted result
-Client decrypts final adjusted risk code
+Server synthetic prefix data -> phone_org.sqlite
+Client phone number -> phone_prefix_code -> BinFHE encryption
+Server LUT evaluation -> encrypted organization code
+Client decrypts organization code
 ```
 
 ## Mermaid
 
 ```mermaid
 flowchart TD
-    T[transactions.csv] --> P[Rule-based profiler]
-    C[customers.csv] --> P
-    P --> DB[(risk_assessments.sqlite)]
-    DB --> B[base_risk_code by assessment_id]
+    S[synthetic prefix mappings] --> DB[(phone_org.sqlite)]
+    DB --> LUT[phone_prefix_code -> organization_code LUT]
 
-    CI[client_inputs.csv] --> AID[assessment_id]
-    CI --> SIG[client_signal_code 0..15]
-    SIG --> ENC[Client encrypts client_signal_code]
-    ENC --> CT[Enc client_signal_code]
+    PHONE[phone_number local on client] --> PREFIX[derive phone_prefix_code 0..15]
+    PREFIX --> ENC[Client encrypts phone_prefix_code]
+    ENC --> CT[Enc phone_prefix_code]
 
-    AID --> LOOKUP[Server lookup assessment_id]
-    LOOKUP --> B
-    B --> SELECT[Select LUT for base_risk_code]
     CT --> EVAL[BinFHE EvalFunc]
-    SELECT --> EVAL
-    EVAL --> OUT[Enc adjusted_risk_code]
+    LUT --> EVAL
+    EVAL --> OUT[Enc organization_code]
     OUT --> DEC[Client decrypts]
-    DEC --> FINAL[adjusted_risk_code 0..15]
+    DEC --> FINAL[organization_code 0..7]
 ```
 
 ## Boundary
 
 ```text
 Client sends:
-  assessment_id
-  Enc(client_signal_code)
+  Enc(phone_prefix_code)
   BinFHE context/config
   BinFHE evaluation key
   LUT version
 
 Server returns:
-  Enc(adjusted_risk_code)
+  Enc(organization_code)
 
 Client keeps private:
   secret key
-  plaintext client_signal_code
-  decrypted adjusted_risk_code
+  plaintext phone_number
+  plaintext phone_prefix_code
+  decrypted organization_code
+```
+
+## Codes
+
+```text
+organization_code:
+  0 Unknown
+  1 Viettel
+  2 VNPT/VinaPhone
+  3 MobiFone
+  4 Vietnamobile
+  5 Gmobile
+  6 Landline
+  7 Other Registered
 ```
