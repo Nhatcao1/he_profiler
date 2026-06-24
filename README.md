@@ -133,13 +133,26 @@ company_code 0..8
 First file-based request shape:
 
 ```json
-{"request_id":"req-0001","lut_version":"synthetic-v1","ct_directory_code":"<serialized BinFHE ciphertext>"}
+{
+  "request_id": "req-0001",
+  "scheme": "BinFHE",
+  "context_id": "synthetic-v1",
+  "context_file": "context.bin",
+  "refresh_key_file": "refresh_key.bin",
+  "switch_key_file": "switch_key.bin",
+  "ciphertext_file": "request_ct.bin"
+}
 ```
 
 First file-based response shape:
 
 ```json
-{"request_id":"req-0001","lut_version":"synthetic-v1","ct_company_code":"<serialized BinFHE ciphertext>"}
+{
+  "request_id": "req-0001",
+  "scheme": "BinFHE",
+  "context_id": "synthetic-v1",
+  "ciphertext_file": "response_ct.bin"
+}
 ```
 
 OpenFHE deployments normally serialize:
@@ -194,4 +207,36 @@ When OpenFHE is installed on the machine/container, switch the flag:
 python3 server/src/build_company_directory_db.py \
   --out server/db/company_directory.sqlite \
   --client-inputs client/data/client_inputs.csv
+```
+
+## Run Commands
+
+Do this after building both targets with `HE_PROFILER_WITH_OPENFHE=ON`.
+
+Create encrypted client request:
+
+```bash
+client/build/encrypt_request \
+  --directory-code 8 \
+  --outgoing client/outgoing \
+  --private client/private \
+  --request-id req-0001
+```
+
+Copy or mount `client/outgoing/*` to the server incoming folder, then evaluate:
+
+```bash
+server/build/run_lut_server \
+  --incoming server/incoming \
+  --outgoing server/outgoing \
+  --request-id req-0001
+```
+
+Copy or mount `server/outgoing/response_ct.bin` to `client/incoming/`, then decrypt:
+
+```bash
+client/build/decrypt_response \
+  --context client/outgoing/context.bin \
+  --secret-key client/private/secret_key.bin \
+  --response-ct client/incoming/response_ct.bin
 ```

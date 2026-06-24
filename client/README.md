@@ -44,3 +44,22 @@ decrypt_response
   decrypt company_code
   compare with plaintext expected output for demo QA
 ```
+
+## Commands
+
+```bash
+client/build/encrypt_request \
+  --directory-code 8 \
+  --outgoing client/outgoing \
+  --private client/private \
+  --request-id req-0001
+```
+
+After the server writes `response_ct.bin`:
+
+```bash
+client/build/decrypt_response \
+  --context client/outgoing/context.bin \
+  --secret-key client/private/secret_key.bin \
+  --response-ct client/incoming/response_ct.bin
+```

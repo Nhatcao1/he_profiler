@@ -35,14 +35,14 @@ Server does not see:
 
 ```text
 directory size: 16 rows
-phone_id domain: 0..15
+directory_code domain: 0..15
 company_code domain: 0..8
 ```
 
 For the first demo, the client maps:
 
 ```text
-phone_number -> phone_id
+phone_number -> directory_code
 ```
 
 Later, replace this with PIR/PSI/encrypted equality if we need arbitrary phone
@@ -61,14 +61,14 @@ sequenceDiagram
     C->>S: Send context + public/evaluation key
 
     S->>S: Load company_directory.sqlite
-    S->>S: Build lookup function phone_id -> company_code
+    S->>S: Build lookup function directory_code -> company_code
 
     C->>C: Read phone_number
-    C->>C: Map phone_number -> phone_id 0..15
-    C->>C: Encrypt phone_id => Enc(phone_id)
-    C->>S: Send request_id + Enc(phone_id)
+    C->>C: Map phone_number -> directory_code 0..15
+    C->>C: Encrypt directory_code => Enc(directory_code)
+    C->>S: Send request_id + Enc(directory_code)
 
-    S->>S: EvalFunc lookup on Enc(phone_id)
+    S->>S: EvalFunc lookup on Enc(directory_code)
     S->>S: Produce Enc(company_code)
     S->>C: Send request_id + Enc(company_code)
 
@@ -81,11 +81,11 @@ sequenceDiagram
 
 ```mermaid
 flowchart TD
-    PHONE[phone_number on client] --> MAP[client maps to phone_id 0..15]
-    MAP --> ENC[encrypt phone_id]
-    ENC --> CTQ[Enc phone_id]
+    PHONE[phone_number on client] --> MAP[client maps to directory_code 0..15]
+    MAP --> ENC[encrypt directory_code]
+    ENC --> CTQ[Enc directory_code]
 
-    DB[(server company_directory.sqlite)] --> LUT[phone_id -> company_code lookup]
+    DB[(server company_directory.sqlite)] --> LUT[directory_code -> company_code lookup]
     CTQ --> EVAL[server BinFHE EvalFunc]
     LUT --> EVAL
     EVAL --> CTR[Enc company_code]
@@ -102,7 +102,7 @@ flowchart TD
   "request_id": "req-0001",
   "scheme": "BinFHE",
   "context_id": "synthetic-v1",
-  "ct_phone_id": "<serialized ciphertext>"
+  "ct_directory_code": "<serialized ciphertext>"
 }
 ```
 
@@ -118,7 +118,7 @@ Never send:
 ```text
 secret_key.bin
 phone_number
-phone_id plaintext
+directory_code plaintext
 ```
 
 ## Response Format
@@ -137,19 +137,19 @@ phone_id plaintext
 Plain version:
 
 ```text
-company_code = company_lut[phone_id]
+company_code = company_lut[directory_code]
 ```
 
 Encrypted version:
 
 ```text
-Enc(company_code) = EvalFunc(Enc(phone_id), company_lut)
+Enc(company_code) = EvalFunc(Enc(directory_code), company_lut)
 ```
 
 ## Correctness Check
 
 ```text
-plain_company_code = company_lut[phone_id]
+plain_company_code = company_lut[directory_code]
 he_company_code = decrypt(Enc(company_code))
 
 exact_match = plain_company_code == he_company_code
@@ -159,9 +159,9 @@ exact_match = plain_company_code == he_company_code
 
 ```text
 1. Keep directory at 16 rows.
-2. Build plaintext phone_id -> company_code LUT.
-3. Client keygen + encrypt one phone_id.
-4. Server EvalFunc over encrypted phone_id.
+2. Build plaintext directory_code -> company_code LUT.
+3. Client keygen + encrypt one directory_code.
+4. Server EvalFunc over encrypted directory_code.
 5. Client decrypt company_code.
 6. Compare HE result with plaintext result.
 7. Add file serialization for context, eval key, request, response.

@@ -43,3 +43,12 @@ Use Compose for the server side only:
 ```bash
 docker compose -f docker/docker-compose.yml run --rm he-profiler-server
 ```
+
+## Command
+
+```bash
+server/build/run_lut_server \
+  --incoming server/incoming \
+  --outgoing server/outgoing \
+  --request-id req-0001
+```

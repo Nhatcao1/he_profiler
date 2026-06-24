@@ -7,6 +7,7 @@ cmake-build-*/
 
 client/incoming/*
 client/outgoing/*
+client/private/*
 server/incoming/*
 server/outgoing/*
 server/db/*.sqlite
@@ -14,6 +15,7 @@ server/db/*.sqlite-*
 
 !client/incoming/.gitkeep
 !client/outgoing/.gitkeep
+!client/private/.gitkeep
 !server/incoming/.gitkeep
 !server/outgoing/.gitkeep
 !server/db/.gitkeep
