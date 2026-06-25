@@ -128,7 +128,7 @@ client/build/decrypt_response \
 
 ```bash
 client/build/encrypt_request \
-  --phone-number +84901234567 \
+  --phone-number +84911234567 \
   --outgoing client/outgoing \
   --private client/private
 
@@ -153,6 +153,14 @@ rsync -av root@100.84.97.118:~/he_profiler/server/outgoing/response.json \
 client/build/decrypt_response \
   --secret-key client/private/secret_key.bin \
   --response-ct client/incoming/response_ct.bin
+```
+
+The commands write logs automatically:
+
+```text
+logs/client_encrypt.log
+logs/server_eval.log
+logs/client_decrypt.log
 ```
 
 ## Security Checklist

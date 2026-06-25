@@ -241,10 +241,12 @@ Create encrypted client request:
 
 ```bash
 client/build/encrypt_request \
-  --phone-number +84901234567 \
+  --phone-number +84911234567 \
   --outgoing client/outgoing \
   --private client/private
 ```
+
+This writes `logs/client_encrypt.log`.
 
 Copy or mount `client/outgoing/*` to the server incoming folder, then evaluate:
 
@@ -254,6 +256,8 @@ server/build/run_lut_server \
   --outgoing server/outgoing
 ```
 
+This writes `logs/server_eval.log`.
+
 Copy or mount `server/outgoing/response_ct.bin` to `client/incoming/`, then decrypt:
 
 ```bash
@@ -261,3 +265,5 @@ client/build/decrypt_response \
   --secret-key client/private/secret_key.bin \
   --response-ct client/incoming/response_ct.bin
 ```
+
+This writes `logs/client_decrypt.log`.

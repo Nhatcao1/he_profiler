@@ -46,10 +46,12 @@ decrypt_response
 
 ```bash
 client/build/encrypt_request \
-  --phone-number +84901234567 \
+  --phone-number +84911234567 \
   --outgoing client/outgoing \
   --private client/private
 ```
+
+Writes `logs/client_encrypt.log`.
 
 After the server writes `response_ct.bin`:
 
@@ -58,3 +60,5 @@ client/build/decrypt_response \
   --secret-key client/private/secret_key.bin \
   --response-ct client/incoming/response_ct.bin
 ```
+
+Writes `logs/client_decrypt.log`.

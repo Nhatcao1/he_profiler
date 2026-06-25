@@ -46,3 +46,5 @@ server/build/run_lut_server \
   --incoming server/incoming \
   --outgoing server/outgoing
 ```
+
+Writes `logs/server_eval.log`.
