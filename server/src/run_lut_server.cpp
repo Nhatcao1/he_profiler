@@ -149,6 +149,10 @@ int main(int argc, char** argv) {
         using lbcrypto::RingGSWACCKey;
 
         std::cout << "[server] reading encrypted request artifacts from " << args.incoming_dir << "\n";
+        std::cout << "[server-report] context_id=" << args.context_id << "\n";
+        std::cout << "[server-report] server_receives=context.bin,refresh_key.bin,switch_key.bin,request_ct.bin,request.json\n";
+        std::cout << "[server-report] server_does_not_receive=phone_number,lookup_slot,secret_key.bin\n";
+        std::cout << "[server-report] encrypted_payload=request_ct.bin=Enc(lookup_slot)\n";
         print_artifact("  context", args.incoming_dir / "context.bin");
         print_artifact("  refresh_key", args.incoming_dir / "refresh_key.bin");
         print_artifact("  switch_key", args.incoming_dir / "switch_key.bin");
@@ -187,8 +191,12 @@ int main(int argc, char** argv) {
 
         std::cout << "[server] generating company lookup LUT\n";
         const auto plaintext_modulus = cc.GetMaxPlaintextSpace();
+        std::cout << "[server-report] plaintext_modulus=" << plaintext_modulus.ConvertToInt()
+                  << " lookup_slot_domain=0..15 company_code_domain=0..8\n";
+        std::cout << "[server-report] lut_semantics=lookup_slot_to_company_code\n";
         auto lut = cc.GenerateLUTviaFunction(company_lut_function, plaintext_modulus);
         std::cout << "[server] evaluating LUT on ciphertext; plaintext query remains hidden\n";
+        std::cout << "[server-report] decryption_on_server=false\n";
         auto response_ct = cc.EvalFunc(request_ct, lut);
 
         if (!lbcrypto::Serial::SerializeToFile((args.outgoing_dir / "response_ct.bin").string(), response_ct, lbcrypto::SerType::BINARY)) {
@@ -197,6 +205,7 @@ int main(int argc, char** argv) {
 
         write_response_manifest(args);
         std::cout << "wrote encrypted response artifacts to " << args.outgoing_dir << "\n";
+        std::cout << "[server-report] encrypted_response=response_ct.bin=Enc(company_code)\n";
         print_artifact("  response_ct", args.outgoing_dir / "response_ct.bin");
         print_artifact("  response_manifest", args.outgoing_dir / "response.json");
 #else

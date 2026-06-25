@@ -152,6 +152,11 @@ int main(int argc, char** argv) {
         std::cout << "[client] preparing one encrypted lookup request\n";
         std::cout << "[client] phone_number stays local: " << args.phone_number << "\n";
         std::cout << "[client] mapped phone_number to a local demo lookup slot\n";
+        std::cout << "[client-report] context_id=" << args.context_id << "\n";
+        std::cout << "[client-report] binfhe_paramset=STD128 method=GINX arbitrary_function=true logQ="
+                  << kLogQ << " ringDim=" << kRingDim << "\n";
+        std::cout << "[client-report] server_receives=context.bin,refresh_key.bin,switch_key.bin,request_ct.bin,request.json\n";
+        std::cout << "[client-report] client_keeps_private=phone_number,lookup_slot,secret_key.bin,decrypted_result\n";
         std::cout << "[client] generating BinFHE context\n";
         BinFHEContext cc;
         cc.GenerateBinFHEContext(STD128, true, kLogQ, kRingDim, GINX, false);
@@ -164,6 +169,7 @@ int main(int argc, char** argv) {
         if (plaintext_modulus < 16) {
             throw std::runtime_error("BinFHE plaintext modulus is smaller than 16");
         }
+        std::cout << "[client-report] plaintext_modulus=" << plaintext_modulus << " lookup_slot_domain=0..15\n";
 
         std::cout << "[client] encrypting lookup slot\n";
         auto ct = cc.Encrypt(
@@ -193,6 +199,7 @@ int main(int argc, char** argv) {
         std::cout << "wrote encrypted request artifacts to " << args.outgoing_dir << "\n";
         std::cout << "wrote client secret key to " << args.private_dir / "secret_key.bin" << "\n";
         std::cout << "lookup slot encrypted; plaintext phone number is not written to request artifacts\n";
+        std::cout << "[client-report] encrypted_payload=request_ct.bin=Enc(lookup_slot)\n";
         std::cout << "[client] outgoing artifacts for server:\n";
         print_artifact("  context", args.outgoing_dir / "context.bin");
         print_artifact("  refresh_key", args.outgoing_dir / "refresh_key.bin");
