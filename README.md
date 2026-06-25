@@ -83,6 +83,12 @@ Protocol flow:
 PRIVATE_COMPANY_LOOKUP_FLOW.md
 ```
 
+Tailscale transfer notes:
+
+```text
+TAILSCALE_TRANSFER.md
+```
+
 ## Server Data
 
 ```text
