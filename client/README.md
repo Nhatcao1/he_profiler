@@ -6,7 +6,6 @@ It owns:
 
 ```text
 phone_number plaintext
-directory_code plaintext
 BinFHE secret key
 decrypted company_code
 displayed company_name
@@ -15,9 +14,7 @@ displayed company_name
 It sends:
 
 ```text
-request_id
-lut_version
-encrypted directory_code
+encrypted lookup_slot
 BinFHE context/config
 BinFHE evaluation key
 ```
@@ -27,7 +24,7 @@ It must not send:
 ```text
 secret key
 plaintext phone_number
-plaintext directory_code
+plaintext lookup_slot
 plaintext company_code
 ```
 
@@ -35,14 +32,15 @@ plaintext company_code
 
 ```text
 encrypt_request
-  read client/data/client_inputs.csv
-  encrypt directory_code
-  write client/outgoing/encrypted_requests.jsonl
+  read one --phone-number
+  map it to a local demo lookup_slot
+  encrypt lookup_slot
+  write OpenFHE artifacts under client/outgoing/
 
 decrypt_response
-  read client/incoming/encrypted_responses.jsonl
+  read client/incoming/response_ct.bin
   decrypt company_code
-  compare with plaintext expected output for demo QA
+  print company_code and company_name
 ```
 
 ## Commands
@@ -51,8 +49,7 @@ decrypt_response
 client/build/encrypt_request \
   --phone-number +84901234567 \
   --outgoing client/outgoing \
-  --private client/private \
-  --request-id req-0001
+  --private client/private
 ```
 
 After the server writes `response_ct.bin`:

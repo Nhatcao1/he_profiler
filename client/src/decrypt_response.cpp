@@ -10,7 +10,6 @@
 
 #ifdef HE_PROFILER_WITH_OPENFHE
 #include "binfhecontext-ser.h"
-using namespace lbcrypto;
 #endif
 
 namespace {
@@ -110,19 +109,19 @@ int main(int argc, char** argv) {
         print_artifact("  response_ct", args.response_ct_path);
 
         BinFHEContext cc;
-        if (!Serial::DeserializeFromFile(args.context_path.string(), cc, SerType::BINARY)) {
+        if (!lbcrypto::Serial::DeserializeFromFile(args.context_path.string(), cc, lbcrypto::SerType::BINARY)) {
             throw std::runtime_error("failed to deserialize context");
         }
 
         std::cout << "[client] reading secret key; it never went to the server\n";
         LWEPrivateKey secret_key;
-        if (!Serial::DeserializeFromFile(args.secret_key_path.string(), secret_key, SerType::BINARY)) {
+        if (!lbcrypto::Serial::DeserializeFromFile(args.secret_key_path.string(), secret_key, lbcrypto::SerType::BINARY)) {
             throw std::runtime_error("failed to deserialize secret key");
         }
 
         std::cout << "[client] reading encrypted company_code response\n";
         LWECiphertext response_ct;
-        if (!Serial::DeserializeFromFile(args.response_ct_path.string(), response_ct, SerType::BINARY)) {
+        if (!lbcrypto::Serial::DeserializeFromFile(args.response_ct_path.string(), response_ct, lbcrypto::SerType::BINARY)) {
             throw std::runtime_error("failed to deserialize response ciphertext");
         }
 

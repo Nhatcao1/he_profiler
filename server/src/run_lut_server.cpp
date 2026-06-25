@@ -10,7 +10,6 @@
 
 #ifdef HE_PROFILER_WITH_OPENFHE
 #include "binfhecontext-ser.h"
-using namespace lbcrypto;
 #endif
 
 namespace {
@@ -39,15 +38,14 @@ constexpr std::array<int, kDomain> kCompanyByDirectoryCode = {
 struct CliArgs {
     std::filesystem::path incoming_dir = "server/incoming";
     std::filesystem::path outgoing_dir = "server/outgoing";
-    std::string request_id = "req-0001";
     std::string context_id = "synthetic-v1";
 };
 
-int company_code_plain(int directory_code) {
-    if (directory_code < 0 || directory_code >= kDomain) {
-        throw std::runtime_error("directory_code must be in 0..15");
+int company_code_plain(int lookup_slot) {
+    if (lookup_slot < 0 || lookup_slot >= kDomain) {
+        throw std::runtime_error("lookup_slot must be in 0..15");
     }
-    return kCompanyByDirectoryCode[directory_code];
+    return kCompanyByDirectoryCode[lookup_slot];
 }
 
 std::uint64_t fnv1a_file(const std::filesystem::path& path) {
@@ -89,11 +87,6 @@ CliArgs parse_args(int argc, char** argv) {
                 throw std::runtime_error("--outgoing requires a path");
             }
             args.outgoing_dir = argv[i];
-        } else if (flag == "--request-id") {
-            if (++i >= argc) {
-                throw std::runtime_error("--request-id requires a value");
-            }
-            args.request_id = argv[i];
         } else if (flag == "--context-id") {
             if (++i >= argc) {
                 throw std::runtime_error("--context-id requires a value");
@@ -119,9 +112,10 @@ void write_response_manifest(const CliArgs& args) {
     }
 
     f << "{\n"
-      << "  \"request_id\": \"" << args.request_id << "\",\n"
       << "  \"scheme\": \"BinFHE\",\n"
+      << "  \"flow\": \"private_company_lookup\",\n"
       << "  \"context_id\": \"" << args.context_id << "\",\n"
+      << "  \"encrypted_output\": \"company_code\",\n"
       << "  \"ciphertext_file\": \"response_ct.bin\"\n"
       << "}\n";
 }
@@ -130,11 +124,11 @@ void write_response_manifest(const CliArgs& args) {
 lbcrypto::NativeInteger company_lut_function(
     lbcrypto::NativeInteger input,
     lbcrypto::NativeInteger plaintext_modulus) {
-    const std::uint64_t directory_code = input.ConvertToInt();
+    const std::uint64_t lookup_slot = input.ConvertToInt();
     const std::uint64_t modulus = plaintext_modulus.ConvertToInt();
-    if (directory_code < kCompanyByDirectoryCode.size()) {
+    if (lookup_slot < kCompanyByDirectoryCode.size()) {
         return lbcrypto::NativeInteger(
-            static_cast<std::uint64_t>(kCompanyByDirectoryCode[directory_code]) % modulus);
+            static_cast<std::uint64_t>(kCompanyByDirectoryCode[lookup_slot]) % modulus);
     }
     return lbcrypto::NativeInteger(0);
 }
@@ -165,18 +159,18 @@ int main(int argc, char** argv) {
 
         std::cout << "[server] deserializing BinFHE context\n";
         BinFHEContext cc;
-        if (!Serial::DeserializeFromFile((args.incoming_dir / "context.bin").string(), cc, SerType::BINARY)) {
+        if (!lbcrypto::Serial::DeserializeFromFile((args.incoming_dir / "context.bin").string(), cc, lbcrypto::SerType::BINARY)) {
             throw std::runtime_error("failed to deserialize context.bin");
         }
 
         std::cout << "[server] loading bootstrapping key material\n";
         RingGSWACCKey refresh_key;
-        if (!Serial::DeserializeFromFile((args.incoming_dir / "refresh_key.bin").string(), refresh_key, SerType::BINARY)) {
+        if (!lbcrypto::Serial::DeserializeFromFile((args.incoming_dir / "refresh_key.bin").string(), refresh_key, lbcrypto::SerType::BINARY)) {
             throw std::runtime_error("failed to deserialize refresh_key.bin");
         }
 
         LWESwitchingKey switch_key;
-        if (!Serial::DeserializeFromFile((args.incoming_dir / "switch_key.bin").string(), switch_key, SerType::BINARY)) {
+        if (!lbcrypto::Serial::DeserializeFromFile((args.incoming_dir / "switch_key.bin").string(), switch_key, lbcrypto::SerType::BINARY)) {
             throw std::runtime_error("failed to deserialize switch_key.bin");
         }
 
@@ -185,9 +179,9 @@ int main(int argc, char** argv) {
         bootstrapping_key.KSkey = switch_key;
         cc.BTKeyLoad(bootstrapping_key);
 
-        std::cout << "[server] reading encrypted directory_code\n";
+        std::cout << "[server] reading encrypted lookup slot\n";
         LWECiphertext request_ct;
-        if (!Serial::DeserializeFromFile((args.incoming_dir / "request_ct.bin").string(), request_ct, SerType::BINARY)) {
+        if (!lbcrypto::Serial::DeserializeFromFile((args.incoming_dir / "request_ct.bin").string(), request_ct, lbcrypto::SerType::BINARY)) {
             throw std::runtime_error("failed to deserialize request_ct.bin");
         }
 
@@ -197,7 +191,7 @@ int main(int argc, char** argv) {
         std::cout << "[server] evaluating LUT on ciphertext; plaintext query remains hidden\n";
         auto response_ct = cc.EvalFunc(request_ct, lut);
 
-        if (!Serial::SerializeToFile((args.outgoing_dir / "response_ct.bin").string(), response_ct, SerType::BINARY)) {
+        if (!lbcrypto::Serial::SerializeToFile((args.outgoing_dir / "response_ct.bin").string(), response_ct, lbcrypto::SerType::BINARY)) {
             throw std::runtime_error("failed to serialize response_ct.bin");
         }
 

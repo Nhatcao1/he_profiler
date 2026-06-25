@@ -6,16 +6,14 @@ It owns:
 
 ```text
 company_directory.sqlite
-directory_code -> company_code mappings
+lookup_slot -> company_code mappings
 BinFHE LUT rules
 ```
 
 It receives:
 
 ```text
-request_id
-lut_version
-encrypted directory_code
+encrypted lookup_slot
 BinFHE context/config
 BinFHE evaluation key
 ```
@@ -23,8 +21,6 @@ BinFHE evaluation key
 It returns:
 
 ```text
-request_id
-lut_version
 encrypted company_code
 ```
 
@@ -49,6 +45,5 @@ docker compose -f docker/docker-compose.yml run --rm he-profiler-server
 ```bash
 server/build/run_lut_server \
   --incoming server/incoming \
-  --outgoing server/outgoing \
-  --request-id req-0001
+  --outgoing server/outgoing
 ```

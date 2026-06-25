@@ -10,7 +10,7 @@ which company code does that row belong to?
 ```
 
 The client keeps the phone number local. The client sends only
-`Enc(directory_code)`. The server evaluates a BinFHE LUT over its company
+`Enc(lookup_slot)`. The server evaluates a BinFHE LUT over its company
 directory and returns `Enc(company_code)`.
 
 The included directory data is synthetic demo data, not an authoritative
@@ -22,7 +22,8 @@ This is not full private search over arbitrary phone numbers.
 
 ```text
 Supported now:
-  Enc(directory_code 0..15) -> BinFHE LUT -> Enc(company_code)
+  phone_number on client -> local lookup_slot 0..15
+  Enc(lookup_slot) -> BinFHE LUT -> Enc(company_code)
 
 Not supported in this tiny demo:
   Enc(full phone number) -> private database search
@@ -38,14 +39,14 @@ small LUT primitive.
 client/
   Runs on the data owner machine.
   Owns plaintext phone_number.
-  Owns plaintext directory_code for demo/enrollment.
   Creates OpenFHE/BinFHE keys.
-  Encrypts directory_code.
+  Maps phone_number to a tiny local demo lookup_slot.
+  Encrypts lookup_slot.
   Decrypts company_code response.
 
 server/
   Runs near the company-directory database.
-  Owns directory_code -> company_code LUT records.
+  Owns lookup_slot -> company_code LUT records.
   Receives ciphertext requests and public evaluation material.
   Runs BinFHE LUT evaluation.
   Returns ciphertext responses.
@@ -62,13 +63,13 @@ server: OpenFHE for ciphertext deserialization and EvalFunc LUT calculation
 
 ```text
 1. Server builds company_directory.sqlite with synthetic records.
-2. Client prepares local phone_number + directory_code rows.
-3. Client encrypts directory_code.
-4. Client sends Enc(directory_code), context, and eval key.
-5. Server computes Enc(directory_code) -> Enc(company_code).
-6. Server returns Enc(company_code).
-7. Client decrypts company_code and maps it to company_name locally.
-8. Plain LUT output and decrypted HE output are compared.
+2. Client selects one plaintext phone_number.
+3. Client maps phone_number to a local demo lookup_slot.
+4. Client encrypts lookup_slot.
+5. Client sends Enc(lookup_slot), context, and eval key.
+6. Server computes Enc(lookup_slot) -> Enc(company_code).
+7. Server returns Enc(company_code).
+8. Client decrypts company_code and maps it to company_name locally.
 ```
 
 Diagram:
@@ -99,7 +100,7 @@ SERVER_SETUP.md
 
 ```text
 company_directory
-  directory_code
+  lookup_slot
   phone_number_masked
   phone_number_sha256
   company_code
@@ -110,10 +111,10 @@ company_directory
 Server uses this table to build:
 
 ```text
-directory_code -> company_code LUT
+lookup_slot -> company_code LUT
 ```
 
-The server knows the directory, but it does not see which `directory_code` was
+The server knows the directory, but it does not see which `lookup_slot` was
 queried when the input is encrypted.
 
 ## Code Meaning
@@ -121,7 +122,7 @@ queried when the input is encrypted.
 Input:
 
 ```text
-directory_code 0..15
+lookup_slot 0..15
 ```
 
 Output:
@@ -146,9 +147,10 @@ First file-based request shape:
 
 ```json
 {
-  "request_id": "req-0001",
   "scheme": "BinFHE",
+  "flow": "private_company_lookup",
   "context_id": "synthetic-v1",
+  "encrypted_input": "lookup_slot",
   "context_file": "context.bin",
   "refresh_key_file": "refresh_key.bin",
   "switch_key_file": "switch_key.bin",
@@ -160,9 +162,10 @@ First file-based response shape:
 
 ```json
 {
-  "request_id": "req-0001",
   "scheme": "BinFHE",
+  "flow": "private_company_lookup",
   "context_id": "synthetic-v1",
+  "encrypted_output": "company_code",
   "ciphertext_file": "response_ct.bin"
 }
 ```
@@ -182,7 +185,7 @@ The secret key stays on the client.
 ```text
 Data model: synthetic company directory
 Encrypted primitive: BinFHE LUT only
-Input domain: directory_code 0..15
+Input domain: lookup_slot 0..15
 Output domain: company_code 0..8
 No ML
 No CKKS
@@ -231,8 +234,7 @@ Create encrypted client request:
 client/build/encrypt_request \
   --phone-number +84901234567 \
   --outgoing client/outgoing \
-  --private client/private \
-  --request-id req-0001
+  --private client/private
 ```
 
 Copy or mount `client/outgoing/*` to the server incoming folder, then evaluate:
@@ -240,8 +242,7 @@ Copy or mount `client/outgoing/*` to the server incoming folder, then evaluate:
 ```bash
 server/build/run_lut_server \
   --incoming server/incoming \
-  --outgoing server/outgoing \
-  --request-id req-0001
+  --outgoing server/outgoing
 ```
 
 Copy or mount `server/outgoing/response_ct.bin` to `client/incoming/`, then decrypt:

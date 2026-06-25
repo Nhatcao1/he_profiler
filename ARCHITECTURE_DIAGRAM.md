@@ -3,9 +3,9 @@
 ## Flow
 
 ```text
-Server company directory -> directory_code -> company_code LUT
+Server company directory -> lookup_slot -> company_code LUT
 Client phone number stays local
-Client sends Enc(directory_code)
+Client sends Enc(lookup_slot)
 Server evaluates BinFHE LUT
 Client decrypts company_code and maps it to company_name
 ```
@@ -14,11 +14,11 @@ Client decrypts company_code and maps it to company_name
 
 ```mermaid
 flowchart TD
-    PHONE[phone_number local on client] --> DC[directory_code local on client]
-    DC --> ENC[Client encrypts directory_code]
-    ENC --> CT[Enc directory_code]
+    PHONE[phone_number local on client] --> SLOT[lookup_slot local on client]
+    SLOT --> ENC[Client encrypts lookup_slot]
+    ENC --> CT[Enc lookup_slot]
 
-    DIR[(company_directory.sqlite)] --> LUT[directory_code -> company_code LUT]
+    DIR[(company_directory.sqlite)] --> LUT[lookup_slot -> company_code LUT]
     CT --> EVAL[BinFHE EvalFunc]
     LUT --> EVAL
     EVAL --> OUT[Enc company_code]
@@ -31,15 +31,11 @@ flowchart TD
 
 ```text
 Client sends to server:
-  request_id
-  lut_version
-  Enc(directory_code)
+  Enc(lookup_slot)
   BinFHE context/config
   BinFHE evaluation key
 
 Server returns to client:
-  request_id
-  lut_version
   Enc(company_code)
 ```
 
@@ -48,7 +44,7 @@ Server returns to client:
 ```text
 secret key
 plaintext phone_number
-plaintext directory_code
+plaintext lookup_slot
 decrypted company_code
 displayed company_name
 ```
@@ -57,16 +53,14 @@ displayed company_name
 
 ```text
 company_directory.sqlite
-full directory_code -> company_code LUT
-request_id
-lut_version
+full lookup_slot -> company_code LUT
 encrypted input ciphertext
 encrypted output ciphertext
 public/evaluation key material
 ```
 
 The server does not see which directory row was queried because it never sees
-plaintext `directory_code` or `phone_number`.
+plaintext `lookup_slot` or `phone_number`.
 
 ## Important Limit
 

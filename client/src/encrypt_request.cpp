@@ -9,27 +9,17 @@
 
 #ifdef HE_PROFILER_WITH_OPENFHE
 #include "binfhecontext-ser.h"
-using namespace lbcrypto;
 #endif
 
 namespace {
 
 struct CliArgs {
-    int directory_code = 1;
+    int lookup_slot = 0;
     std::string phone_number;
     std::filesystem::path outgoing_dir = "client/outgoing";
     std::filesystem::path private_dir = "client/private";
-    std::string request_id = "req-0001";
     std::string context_id = "synthetic-v1";
 };
-
-int parse_code(const std::string& value, const std::string& name) {
-    const int parsed = std::stoi(value);
-    if (parsed < 0 || parsed > 15) {
-        throw std::runtime_error(name + " must be in 0..15");
-    }
-    return parsed;
-}
 
 std::string normalize_phone(const std::string& phone_number) {
     std::string digits;
@@ -41,7 +31,7 @@ std::string normalize_phone(const std::string& phone_number) {
     return digits;
 }
 
-int directory_code_for_phone(const std::string& phone_number) {
+int lookup_slot_for_phone(const std::string& phone_number) {
     const std::string digits = normalize_phone(phone_number);
     if (digits == "84961234567") return 1;
     if (digits == "84971234567") return 2;
@@ -58,7 +48,7 @@ int directory_code_for_phone(const std::string& phone_number) {
     if (digits == "84241234567") return 13;
     if (digits == "84281234567") return 14;
     if (digits == "84701234567") return 15;
-    throw std::runtime_error("phone number is not in the tiny demo directory");
+    throw std::runtime_error("phone number is not in the tiny demo registry");
 }
 
 std::uint64_t fnv1a_file(const std::filesystem::path& path) {
@@ -87,17 +77,10 @@ void print_artifact(const std::string& label, const std::filesystem::path& path)
 
 CliArgs parse_args(int argc, char** argv) {
     CliArgs args;
-    bool explicit_directory_code = false;
 
     for (int i = 1; i < argc; ++i) {
         const std::string flag = argv[i];
-        if (flag == "--directory-code") {
-            if (++i >= argc) {
-                throw std::runtime_error("--directory-code requires a value");
-            }
-            args.directory_code = parse_code(argv[i], "directory_code");
-            explicit_directory_code = true;
-        } else if (flag == "--phone-number") {
+        if (flag == "--phone-number") {
             if (++i >= argc) {
                 throw std::runtime_error("--phone-number requires a value");
             }
@@ -112,11 +95,6 @@ CliArgs parse_args(int argc, char** argv) {
                 throw std::runtime_error("--private requires a path");
             }
             args.private_dir = argv[i];
-        } else if (flag == "--request-id") {
-            if (++i >= argc) {
-                throw std::runtime_error("--request-id requires a value");
-            }
-            args.request_id = argv[i];
         } else if (flag == "--context-id") {
             if (++i >= argc) {
                 throw std::runtime_error("--context-id requires a value");
@@ -127,11 +105,10 @@ CliArgs parse_args(int argc, char** argv) {
         }
     }
 
-    if (!args.phone_number.empty()) {
-        args.directory_code = directory_code_for_phone(args.phone_number);
-    } else if (!explicit_directory_code) {
-        std::cout << "No --phone-number or --directory-code supplied; using demo directory_code=1\n";
+    if (args.phone_number.empty()) {
+        throw std::runtime_error("--phone-number is required");
     }
+    args.lookup_slot = lookup_slot_for_phone(args.phone_number);
 
     return args;
 }
@@ -143,9 +120,10 @@ void write_request_manifest(const CliArgs& args) {
     }
 
     f << "{\n"
-      << "  \"request_id\": \"" << args.request_id << "\",\n"
       << "  \"scheme\": \"BinFHE\",\n"
+      << "  \"flow\": \"private_company_lookup\",\n"
       << "  \"context_id\": \"" << args.context_id << "\",\n"
+      << "  \"encrypted_input\": \"lookup_slot\",\n"
       << "  \"context_file\": \"context.bin\",\n"
       << "  \"refresh_key_file\": \"refresh_key.bin\",\n"
       << "  \"switch_key_file\": \"switch_key.bin\",\n"
@@ -172,10 +150,8 @@ int main(int argc, char** argv) {
         constexpr std::uint32_t kLogQ = 12;
 
         std::cout << "[client] preparing one encrypted lookup request\n";
-        if (!args.phone_number.empty()) {
-            std::cout << "[client] phone_number stays local: " << args.phone_number << "\n";
-            std::cout << "[client] mapped phone_number -> directory_code=" << args.directory_code << "\n";
-        }
+        std::cout << "[client] phone_number stays local: " << args.phone_number << "\n";
+        std::cout << "[client] mapped phone_number to a local demo lookup slot\n";
         std::cout << "[client] generating BinFHE context\n";
         BinFHEContext cc;
         cc.GenerateBinFHEContext(STD128, true, kLogQ, kRingDim, GINX, false);
@@ -189,26 +165,26 @@ int main(int argc, char** argv) {
             throw std::runtime_error("BinFHE plaintext modulus is smaller than 16");
         }
 
-        std::cout << "[client] encrypting directory_code\n";
+        std::cout << "[client] encrypting lookup slot\n";
         auto ct = cc.Encrypt(
             secret_key,
-            static_cast<LWEPlaintext>(args.directory_code),
+            static_cast<LWEPlaintext>(args.lookup_slot),
             LARGE_DIM,
             plaintext_modulus);
 
-        if (!Serial::SerializeToFile((args.outgoing_dir / "context.bin").string(), cc, SerType::BINARY)) {
+        if (!lbcrypto::Serial::SerializeToFile((args.outgoing_dir / "context.bin").string(), cc, lbcrypto::SerType::BINARY)) {
             throw std::runtime_error("failed to serialize context.bin");
         }
-        if (!Serial::SerializeToFile((args.outgoing_dir / "refresh_key.bin").string(), cc.GetRefreshKey(), SerType::BINARY)) {
+        if (!lbcrypto::Serial::SerializeToFile((args.outgoing_dir / "refresh_key.bin").string(), cc.GetRefreshKey(), lbcrypto::SerType::BINARY)) {
             throw std::runtime_error("failed to serialize refresh_key.bin");
         }
-        if (!Serial::SerializeToFile((args.outgoing_dir / "switch_key.bin").string(), cc.GetSwitchKey(), SerType::BINARY)) {
+        if (!lbcrypto::Serial::SerializeToFile((args.outgoing_dir / "switch_key.bin").string(), cc.GetSwitchKey(), lbcrypto::SerType::BINARY)) {
             throw std::runtime_error("failed to serialize switch_key.bin");
         }
-        if (!Serial::SerializeToFile((args.private_dir / "secret_key.bin").string(), secret_key, SerType::BINARY)) {
+        if (!lbcrypto::Serial::SerializeToFile((args.private_dir / "secret_key.bin").string(), secret_key, lbcrypto::SerType::BINARY)) {
             throw std::runtime_error("failed to serialize secret_key.bin");
         }
-        if (!Serial::SerializeToFile((args.outgoing_dir / "request_ct.bin").string(), ct, SerType::BINARY)) {
+        if (!lbcrypto::Serial::SerializeToFile((args.outgoing_dir / "request_ct.bin").string(), ct, lbcrypto::SerType::BINARY)) {
             throw std::runtime_error("failed to serialize request_ct.bin");
         }
 
@@ -216,7 +192,7 @@ int main(int argc, char** argv) {
 
         std::cout << "wrote encrypted request artifacts to " << args.outgoing_dir << "\n";
         std::cout << "wrote client secret key to " << args.private_dir / "secret_key.bin" << "\n";
-        std::cout << "directory_code encrypted; plaintext not written to request artifacts\n";
+        std::cout << "lookup slot encrypted; plaintext phone number is not written to request artifacts\n";
         std::cout << "[client] outgoing artifacts for server:\n";
         print_artifact("  context", args.outgoing_dir / "context.bin");
         print_artifact("  refresh_key", args.outgoing_dir / "refresh_key.bin");
@@ -228,9 +204,7 @@ int main(int argc, char** argv) {
 #else
         write_request_manifest(args);
         std::cout << "OpenFHE disabled; wrote request manifest only\n";
-        if (!args.phone_number.empty()) {
-            std::cout << "phone_number mapped locally to directory_code=" << args.directory_code << "\n";
-        }
+        std::cout << "phone_number mapped locally to a demo lookup slot\n";
         print_artifact("request_manifest", args.outgoing_dir / "request.json");
         std::cout << "configure with -DHE_PROFILER_WITH_OPENFHE=ON to serialize ciphertext artifacts\n";
 #endif

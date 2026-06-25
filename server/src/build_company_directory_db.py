@@ -3,11 +3,11 @@
 
 This is demo data, not an authoritative registry. The important relationship is:
 
-    directory_code -> masked phone record -> company_code
+    lookup_slot -> masked phone record -> company_code
 
-The server can turn the directory_code -> company_code relation into a BinFHE
-LUT. During encrypted evaluation, the server receives Enc(directory_code), not
-the phone number or plaintext directory code.
+The server can turn the lookup_slot -> company_code relation into a BinFHE LUT.
+During encrypted evaluation, the server receives Enc(lookup_slot), not the
+phone number or plaintext lookup slot.
 """
 
 from __future__ import annotations
@@ -23,7 +23,7 @@ from pathlib import Path
 
 @dataclass(frozen=True)
 class DirectoryEntry:
-    directory_code: int
+    lookup_slot: int
     phone_number: str
     company_code: int
     company_name: str
@@ -78,7 +78,7 @@ def create_schema(conn: sqlite3.Connection) -> None:
         DROP TABLE IF EXISTS company_directory;
 
         CREATE TABLE company_directory (
-          directory_code INTEGER PRIMARY KEY,
+          lookup_slot INTEGER PRIMARY KEY,
           phone_number_masked TEXT NOT NULL,
           phone_number_sha256 TEXT NOT NULL,
           company_code INTEGER NOT NULL,
@@ -100,14 +100,14 @@ def build_database(args: argparse.Namespace) -> None:
         conn.executemany(
             """
             INSERT INTO company_directory (
-              directory_code, phone_number_masked, phone_number_sha256,
+              lookup_slot, phone_number_masked, phone_number_sha256,
               company_code, company_name, registry_status,
               registry_version, created_at
             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
             """,
             [
                 (
-                    entry.directory_code,
+                    entry.lookup_slot,
                     mask_phone(entry.phone_number),
                     phone_hash(entry.phone_number),
                     entry.company_code,
@@ -126,9 +126,9 @@ def write_client_inputs(path: Path) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("w", newline="") as f:
         writer = csv.writer(f)
-        writer.writerow(["phone_number", "directory_code"])
+        writer.writerow(["phone_number"])
         for entry in DIRECTORY_ENTRIES[1:]:
-            writer.writerow([entry.phone_number, entry.directory_code])
+            writer.writerow([entry.phone_number])
 
 
 def main() -> None:

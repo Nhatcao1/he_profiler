@@ -28,7 +28,7 @@ Meaning:
 context.bin       OpenFHE/BinFHE parameters
 refresh_key.bin   bootstrapping refresh key
 switch_key.bin    key switching key
-request_ct.bin    Enc(directory_code)
+request_ct.bin    Enc(lookup_slot)
 request.json      request metadata
 ```
 
@@ -106,8 +106,7 @@ Run the server evaluator over SSH:
 ssh root@100.84.97.118 \
   'cd ~/he_profiler && server/build/run_lut_server \
     --incoming server/incoming \
-    --outgoing server/outgoing \
-    --request-id req-0001'
+    --outgoing server/outgoing'
 ```
 
 Fetch encrypted response:
@@ -135,8 +134,7 @@ client/build/decrypt_response \
 client/build/encrypt_request \
   --phone-number +84901234567 \
   --outgoing client/outgoing \
-  --private client/private \
-  --request-id req-0001
+  --private client/private
 
 rsync -av \
   client/outgoing/context.bin \
@@ -149,8 +147,7 @@ rsync -av \
 ssh root@100.84.97.118 \
   'cd ~/he_profiler && server/build/run_lut_server \
     --incoming server/incoming \
-    --outgoing server/outgoing \
-    --request-id req-0001'
+    --outgoing server/outgoing'
 
 rsync -av root@100.84.97.118:~/he_profiler/server/outgoing/response_ct.bin \
   client/incoming/
@@ -177,7 +174,7 @@ Do send:
 Do not send:
   secret_key.bin
   plaintext phone_number
-  plaintext directory_code
+  plaintext lookup_slot
 ```
 
 The server can evaluate the encrypted request, but only the client can decrypt

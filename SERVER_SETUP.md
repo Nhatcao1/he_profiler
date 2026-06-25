@@ -98,8 +98,7 @@ After the client sends artifacts into `server/incoming/`:
 ```bash
 server/build/run_lut_server \
   --incoming server/incoming \
-  --outgoing server/outgoing \
-  --request-id req-0001
+  --outgoing server/outgoing
 ```
 
 The server should print fingerprints for:
