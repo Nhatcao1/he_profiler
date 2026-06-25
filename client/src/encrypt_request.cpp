@@ -17,6 +17,7 @@ namespace {
 
 struct CliArgs {
     int lookup_slot = 0;
+    bool matched_registry = false;
     std::string phone_number;
     std::filesystem::path outgoing_dir = "client/outgoing";
     std::filesystem::path private_dir = "client/private";
@@ -96,8 +97,9 @@ std::string normalize_phone(const std::string& phone_number) {
     return digits;
 }
 
-int lookup_slot_for_phone(const std::string& phone_number) {
+int lookup_slot_for_phone(const std::string& phone_number, bool* matched_registry) {
     const std::string digits = normalize_phone(phone_number);
+    *matched_registry = true;
     if (digits == "84961234567") return 1;  // Viettel
     if (digits == "84911234567") return 2;  // VNPT/VinaPhone
     if (digits == "84901234567") return 3;  // MobiFone
@@ -105,8 +107,9 @@ int lookup_slot_for_phone(const std::string& phone_number) {
     if (digits == "84991234567") return 5;  // Gmobile
     if (digits == "84241234567") return 6;  // Hanoi Landline
     if (digits == "84281234567") return 7;  // HCMC Landline
-    if (digits == "84701234567") return 0;  // Unknown/other demo bucket
-    throw std::runtime_error("phone number is not in the tiny demo registry");
+    if (digits == "84701234567") return 0;  // No information demo bucket
+    *matched_registry = false;
+    return 0;
 }
 
 std::uint64_t fnv1a_file(const std::filesystem::path& path) {
@@ -171,7 +174,7 @@ CliArgs parse_args(int argc, char** argv) {
     if (args.phone_number.empty()) {
         throw std::runtime_error("--phone-number is required");
     }
-    args.lookup_slot = lookup_slot_for_phone(args.phone_number);
+    args.lookup_slot = lookup_slot_for_phone(args.phone_number, &args.matched_registry);
 
     return args;
 }
@@ -225,12 +228,16 @@ int main(int argc, char** argv) {
         std::cout << "[client] preparing one encrypted lookup request\n";
         std::cout << "[client] phone_number stays local: " << args.phone_number << "\n";
         std::cout << "[client] mapped phone_number to a local demo lookup slot\n";
+        if (!args.matched_registry) {
+            std::cout << "[client] phone_number not found locally; using encrypted no-information slot\n";
+        }
         std::cout << "[client-report] context_id=" << args.context_id << "\n";
         std::cout << "[client-report] binfhe_paramset=TOY method=GINX arbitrary_function=true logQ="
                   << kLogQ << " ringDim=" << kRingDim << "\n";
         std::cout << "[client-report] context_recreated_from_params=true\n";
         std::cout << "[client-report] server_receives=refresh_key.bin,switch_key.bin,request_ct.bin,request.json\n";
         std::cout << "[client-report] client_keeps_private=phone_number,lookup_slot,secret_key.bin,decrypted_result\n";
+        std::cout << "[client-report] local_registry_match=" << (args.matched_registry ? "true" : "false") << "\n";
         std::cout << "[client] generating BinFHE context\n";
         const auto context_start = Clock::now();
         BinFHEContext cc;

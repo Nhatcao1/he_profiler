@@ -31,7 +31,7 @@ class DirectoryEntry:
 
 
 DIRECTORY_ENTRIES = [
-    DirectoryEntry(0, "+84701234567", 0, "Unknown", "unknown"),
+    DirectoryEntry(0, "+84701234567", 0, "No information", "unknown"),
     DirectoryEntry(1, "+84961234567", 1, "Viettel", "verified_company"),
     DirectoryEntry(2, "+84911234567", 2, "VNPT/VinaPhone", "verified_company"),
     DirectoryEntry(3, "+84901234567", 3, "MobiFone", "verified_company"),

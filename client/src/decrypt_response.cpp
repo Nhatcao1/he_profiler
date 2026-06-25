@@ -24,7 +24,7 @@ struct CliArgs {
 };
 
 constexpr std::array<const char*, 8> kCompanyNames = {
-    "Unknown",
+    "No information",
     "Viettel",
     "VNPT/VinaPhone",
     "MobiFone",

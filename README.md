@@ -130,7 +130,7 @@ Output:
 ```text
 company_code 0..7
 
-0 Unknown
+0 No information
 1 Viettel
 2 VNPT/VinaPhone
 3 MobiFone
