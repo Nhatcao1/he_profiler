@@ -150,9 +150,8 @@ int main(int argc, char** argv) {
         using lbcrypto::BinFHEContext;
         using lbcrypto::LWECiphertext;
         using lbcrypto::LWESwitchingKey;
+        using lbcrypto::RingGSWBTKey;
         using lbcrypto::RingGSWACCKey;
-        using lbcrypto::Serial;
-        using lbcrypto::SerType;
 
         std::cout << "[server] reading encrypted request artifacts from " << args.incoming_dir << "\n";
         print_artifact("  context", args.incoming_dir / "context.bin");
@@ -180,7 +179,10 @@ int main(int argc, char** argv) {
             throw std::runtime_error("failed to deserialize switch_key.bin");
         }
 
-        cc.BTKeyLoad({refresh_key, switch_key});
+        RingGSWBTKey bootstrapping_key;
+        bootstrapping_key.BSkey = refresh_key;
+        bootstrapping_key.KSkey = switch_key;
+        cc.BTKeyLoad(bootstrapping_key);
 
         std::cout << "[server] reading encrypted directory_code\n";
         LWECiphertext request_ct;

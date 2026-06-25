@@ -102,8 +102,6 @@ int main(int argc, char** argv) {
         using lbcrypto::LWECiphertext;
         using lbcrypto::LWEPlaintext;
         using lbcrypto::LWEPrivateKey;
-        using lbcrypto::Serial;
-        using lbcrypto::SerType;
 
         std::cout << "[client] loading local context and secret key\n";
         print_artifact("  context", args.context_path);

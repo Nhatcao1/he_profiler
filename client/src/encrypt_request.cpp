@@ -165,8 +165,6 @@ int main(int argc, char** argv) {
         using lbcrypto::GINX;
         using lbcrypto::LARGE_DIM;
         using lbcrypto::LWEPlaintext;
-        using lbcrypto::Serial;
-        using lbcrypto::SerType;
         using lbcrypto::STD128;
 
         constexpr std::uint32_t kRingDim = 4096;
