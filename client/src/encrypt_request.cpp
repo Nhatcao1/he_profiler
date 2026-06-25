@@ -9,6 +9,7 @@
 
 #ifdef HE_PROFILER_WITH_OPENFHE
 #include "binfhecontext-ser.h"
+using namespace lbcrypto;
 #endif
 
 namespace {

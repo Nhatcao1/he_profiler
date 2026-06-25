@@ -62,6 +62,22 @@ cmake -S server -B server/build \
 cmake --build server/build
 ```
 
+If `~/openfhe-development` is only a source/build tree beside `~/he_profiler`,
+that is fine, but `find_package(OpenFHE)` still needs the generated or installed
+OpenFHE CMake config. Locate it with:
+
+```bash
+find ~/openfhe-development -name 'OpenFHEConfig.cmake' -print
+```
+
+Then pass the folder containing that file:
+
+```bash
+cmake -S server -B server/build \
+  -DHE_PROFILER_WITH_OPENFHE=ON \
+  -DOpenFHE_DIR=/path/that/contains/OpenFHEConfig.cmake
+```
+
 ## 5. Prepare Runtime Folders
 
 ```bash
