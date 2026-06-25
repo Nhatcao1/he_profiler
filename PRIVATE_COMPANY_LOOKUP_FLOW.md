@@ -164,7 +164,7 @@ exact_match = plain_company_code == he_company_code
 4. Server EvalFunc over encrypted directory_code.
 5. Client decrypt company_code.
 6. Compare HE result with plaintext result.
-7. Add file serialization for context, eval key, request, response.
+7. Print artifact sizes and fingerprints on both sides.
 8. Only after that consider larger private search protocols.
 ```
 

@@ -49,7 +49,7 @@ decrypt_response
 
 ```bash
 client/build/encrypt_request \
-  --directory-code 8 \
+  --phone-number +84901234567 \
   --outgoing client/outgoing \
   --private client/private \
   --request-id req-0001

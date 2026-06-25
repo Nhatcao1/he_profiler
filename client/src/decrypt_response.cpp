@@ -1,6 +1,9 @@
 #include <array>
 #include <cstdlib>
+#include <cstdint>
 #include <filesystem>
+#include <fstream>
+#include <iomanip>
 #include <iostream>
 #include <stdexcept>
 #include <string>
@@ -64,6 +67,30 @@ const char* company_name(std::size_t code) {
     return kCompanyNames[code];
 }
 
+std::uint64_t fnv1a_file(const std::filesystem::path& path) {
+    std::ifstream f(path, std::ios::binary);
+    if (!f) {
+        throw std::runtime_error("could not read file for fingerprint: " + path.string());
+    }
+
+    std::uint64_t hash = 1469598103934665603ULL;
+    char ch = 0;
+    while (f.get(ch)) {
+        hash ^= static_cast<unsigned char>(ch);
+        hash *= 1099511628211ULL;
+    }
+    return hash;
+}
+
+void print_artifact(const std::string& label, const std::filesystem::path& path) {
+    const auto size = std::filesystem::file_size(path);
+    const auto hash = fnv1a_file(path);
+    std::cout << label << ": " << path
+              << " bytes=" << size
+              << " fnv1a64=0x" << std::hex << std::setw(16) << std::setfill('0')
+              << hash << std::dec << std::setfill(' ') << "\n";
+}
+
 }  // namespace
 
 int main(int argc, char** argv) {
@@ -78,16 +105,23 @@ int main(int argc, char** argv) {
         using lbcrypto::Serial;
         using lbcrypto::SerType;
 
+        std::cout << "[client] loading local context and secret key\n";
+        print_artifact("  context", args.context_path);
+        print_artifact("  secret_key", args.secret_key_path);
+        print_artifact("  response_ct", args.response_ct_path);
+
         BinFHEContext cc;
         if (!Serial::DeserializeFromFile(args.context_path.string(), cc, SerType::BINARY)) {
             throw std::runtime_error("failed to deserialize context");
         }
 
+        std::cout << "[client] reading secret key; it never went to the server\n";
         LWEPrivateKey secret_key;
         if (!Serial::DeserializeFromFile(args.secret_key_path.string(), secret_key, SerType::BINARY)) {
             throw std::runtime_error("failed to deserialize secret key");
         }
 
+        std::cout << "[client] reading encrypted company_code response\n";
         LWECiphertext response_ct;
         if (!Serial::DeserializeFromFile(args.response_ct_path.string(), response_ct, SerType::BINARY)) {
             throw std::runtime_error("failed to deserialize response ciphertext");
@@ -95,8 +129,10 @@ int main(int argc, char** argv) {
 
         const auto plaintext_modulus = cc.GetMaxPlaintextSpace().ConvertToInt();
         LWEPlaintext company_code = 0;
+        std::cout << "[client] decrypting response...\n";
         cc.Decrypt(secret_key, response_ct, &company_code, plaintext_modulus);
 
+        std::cout << "[client] decrypted result\n";
         std::cout << "company_code=" << company_code << "\n";
         std::cout << "company_name=" << company_name(static_cast<std::size_t>(company_code)) << "\n";
 #else

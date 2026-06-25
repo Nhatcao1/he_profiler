@@ -3,6 +3,7 @@
 #include <cstdint>
 #include <filesystem>
 #include <fstream>
+#include <iomanip>
 #include <iostream>
 #include <stdexcept>
 #include <string>
@@ -46,6 +47,30 @@ int company_code_plain(int directory_code) {
         throw std::runtime_error("directory_code must be in 0..15");
     }
     return kCompanyByDirectoryCode[directory_code];
+}
+
+std::uint64_t fnv1a_file(const std::filesystem::path& path) {
+    std::ifstream f(path, std::ios::binary);
+    if (!f) {
+        throw std::runtime_error("could not read file for fingerprint: " + path.string());
+    }
+
+    std::uint64_t hash = 1469598103934665603ULL;
+    char ch = 0;
+    while (f.get(ch)) {
+        hash ^= static_cast<unsigned char>(ch);
+        hash *= 1099511628211ULL;
+    }
+    return hash;
+}
+
+void print_artifact(const std::string& label, const std::filesystem::path& path) {
+    const auto size = std::filesystem::file_size(path);
+    const auto hash = fnv1a_file(path);
+    std::cout << label << ": " << path
+              << " bytes=" << size
+              << " fnv1a64=0x" << std::hex << std::setw(16) << std::setfill('0')
+              << hash << std::dec << std::setfill(' ') << "\n";
 }
 
 CliArgs parse_args(int argc, char** argv) {
@@ -129,11 +154,22 @@ int main(int argc, char** argv) {
         using lbcrypto::Serial;
         using lbcrypto::SerType;
 
+        std::cout << "[server] reading encrypted request artifacts from " << args.incoming_dir << "\n";
+        print_artifact("  context", args.incoming_dir / "context.bin");
+        print_artifact("  refresh_key", args.incoming_dir / "refresh_key.bin");
+        print_artifact("  switch_key", args.incoming_dir / "switch_key.bin");
+        print_artifact("  request_ct", args.incoming_dir / "request_ct.bin");
+        if (std::filesystem::exists(args.incoming_dir / "request.json")) {
+            print_artifact("  request_manifest", args.incoming_dir / "request.json");
+        }
+
+        std::cout << "[server] deserializing BinFHE context\n";
         BinFHEContext cc;
         if (!Serial::DeserializeFromFile((args.incoming_dir / "context.bin").string(), cc, SerType::BINARY)) {
             throw std::runtime_error("failed to deserialize context.bin");
         }
 
+        std::cout << "[server] loading bootstrapping key material\n";
         RingGSWACCKey refresh_key;
         if (!Serial::DeserializeFromFile((args.incoming_dir / "refresh_key.bin").string(), refresh_key, SerType::BINARY)) {
             throw std::runtime_error("failed to deserialize refresh_key.bin");
@@ -146,13 +182,16 @@ int main(int argc, char** argv) {
 
         cc.BTKeyLoad({refresh_key, switch_key});
 
+        std::cout << "[server] reading encrypted directory_code\n";
         LWECiphertext request_ct;
         if (!Serial::DeserializeFromFile((args.incoming_dir / "request_ct.bin").string(), request_ct, SerType::BINARY)) {
             throw std::runtime_error("failed to deserialize request_ct.bin");
         }
 
+        std::cout << "[server] generating company lookup LUT\n";
         const auto plaintext_modulus = cc.GetMaxPlaintextSpace();
         auto lut = cc.GenerateLUTviaFunction(company_lut_function, plaintext_modulus);
+        std::cout << "[server] evaluating LUT on ciphertext; plaintext query remains hidden\n";
         auto response_ct = cc.EvalFunc(request_ct, lut);
 
         if (!Serial::SerializeToFile((args.outgoing_dir / "response_ct.bin").string(), response_ct, SerType::BINARY)) {
@@ -161,9 +200,12 @@ int main(int argc, char** argv) {
 
         write_response_manifest(args);
         std::cout << "wrote encrypted response artifacts to " << args.outgoing_dir << "\n";
+        print_artifact("  response_ct", args.outgoing_dir / "response_ct.bin");
+        print_artifact("  response_manifest", args.outgoing_dir / "response.json");
 #else
         write_response_manifest(args);
         std::cout << "OpenFHE disabled; wrote response manifest only\n";
+        print_artifact("response_manifest", args.outgoing_dir / "response.json");
         std::cout << "configure with -DHE_PROFILER_WITH_OPENFHE=ON to evaluate ciphertext\n";
 #endif
 

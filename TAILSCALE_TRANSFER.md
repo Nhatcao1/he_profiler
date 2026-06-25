@@ -73,12 +73,18 @@ client/private/
 
 ## Transfer Commands
 
-Replace `<server-user>` with the SSH user on the Tailscale server.
+The current server login is:
+
+```text
+root@100.84.97.118
+```
+
+Type the password only when SSH prompts. Do not paste it into commands.
 
 Create remote folders:
 
 ```bash
-ssh <server-user>@100.84.97.118 \
+ssh root@100.84.97.118 \
   'mkdir -p ~/he_profiler/server/incoming ~/he_profiler/server/outgoing'
 ```
 
@@ -91,13 +97,13 @@ rsync -av \
   client/outgoing/switch_key.bin \
   client/outgoing/request_ct.bin \
   client/outgoing/request.json \
-  <server-user>@100.84.97.118:~/he_profiler/server/incoming/
+  root@100.84.97.118:~/he_profiler/server/incoming/
 ```
 
 Run the server evaluator over SSH:
 
 ```bash
-ssh <server-user>@100.84.97.118 \
+ssh root@100.84.97.118 \
   'cd ~/he_profiler && server/build/run_lut_server \
     --incoming server/incoming \
     --outgoing server/outgoing \
@@ -107,10 +113,10 @@ ssh <server-user>@100.84.97.118 \
 Fetch encrypted response:
 
 ```bash
-rsync -av <server-user>@100.84.97.118:~/he_profiler/server/outgoing/response_ct.bin \
+rsync -av root@100.84.97.118:~/he_profiler/server/outgoing/response_ct.bin \
   client/incoming/
 
-rsync -av <server-user>@100.84.97.118:~/he_profiler/server/outgoing/response.json \
+rsync -av root@100.84.97.118:~/he_profiler/server/outgoing/response.json \
   client/incoming/
 ```
 
@@ -127,7 +133,7 @@ client/build/decrypt_response \
 
 ```bash
 client/build/encrypt_request \
-  --directory-code 8 \
+  --phone-number +84901234567 \
   --outgoing client/outgoing \
   --private client/private \
   --request-id req-0001
@@ -138,18 +144,18 @@ rsync -av \
   client/outgoing/switch_key.bin \
   client/outgoing/request_ct.bin \
   client/outgoing/request.json \
-  <server-user>@100.84.97.118:~/he_profiler/server/incoming/
+  root@100.84.97.118:~/he_profiler/server/incoming/
 
-ssh <server-user>@100.84.97.118 \
+ssh root@100.84.97.118 \
   'cd ~/he_profiler && server/build/run_lut_server \
     --incoming server/incoming \
     --outgoing server/outgoing \
     --request-id req-0001'
 
-rsync -av <server-user>@100.84.97.118:~/he_profiler/server/outgoing/response_ct.bin \
+rsync -av root@100.84.97.118:~/he_profiler/server/outgoing/response_ct.bin \
   client/incoming/
 
-rsync -av <server-user>@100.84.97.118:~/he_profiler/server/outgoing/response.json \
+rsync -av root@100.84.97.118:~/he_profiler/server/outgoing/response.json \
   client/incoming/
 
 client/build/decrypt_response \
