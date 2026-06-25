@@ -6,6 +6,8 @@
 Server company directory -> lookup_slot -> company_code LUT
 Client phone number stays local
 Client sends Enc(lookup_slot)
+Client sends refresh/switch evaluation keys
+Client sends context params, not context.bin
 Server evaluates BinFHE LUT
 Client decrypts company_code and maps it to company_name
 ```
@@ -15,13 +17,20 @@ Client decrypts company_code and maps it to company_name
 ```mermaid
 flowchart TD
     PHONE[phone_number local on client] --> SLOT[lookup_slot local on client]
+    PARAMS[TOY GINX params logQ 12 ringDim 1024] --> CCTX[Client recreates BinFHE context]
+    PARAMS --> SCTX[Server recreates BinFHE context]
     SLOT --> ENC[Client encrypts lookup_slot]
+    CCTX --> ENC
     ENC --> CT[Enc lookup_slot]
+    CCTX --> EKEYS[refresh_key.bin and switch_key.bin]
 
     DIR[(company_directory.sqlite)] --> LUT[lookup_slot -> company_code LUT]
+    SCTX --> EVAL[BinFHE EvalFunc]
+    EKEYS --> EVAL
     CT --> EVAL[BinFHE EvalFunc]
     LUT --> EVAL
     EVAL --> OUT[Enc company_code]
+    CCTX --> DEC[Client decrypts]
     OUT --> DEC[Client decrypts]
     DEC --> CODE[company_code 0..7]
     CODE --> NAME[company_name local display]
@@ -33,10 +42,25 @@ flowchart TD
 Client sends to server:
   Enc(lookup_slot)
   context params in request.json
-  BinFHE evaluation key
+  refresh_key.bin
+  switch_key.bin
+  request_ct.bin
+  request.json
 
 Server returns to client:
-  Enc(company_code)
+  response_ct.bin
+  response.json
+```
+
+The client and server both recreate the BinFHE context from:
+
+```text
+paramset: TOY
+method: GINX
+arbitrary_function: true
+logQ: 12
+ringDim: 1024
+time_optimization: false
 ```
 
 ## Client Keeps Private
