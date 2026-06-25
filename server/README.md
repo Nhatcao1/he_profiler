@@ -14,7 +14,6 @@ It receives:
 
 ```text
 encrypted lookup_slot
-BinFHE context/config
 BinFHE evaluation key
 ```
 

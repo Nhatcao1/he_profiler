@@ -104,7 +104,6 @@ server/build/run_lut_server \
 The server should print fingerprints for:
 
 ```text
-context.bin
 refresh_key.bin
 switch_key.bin
 request_ct.bin

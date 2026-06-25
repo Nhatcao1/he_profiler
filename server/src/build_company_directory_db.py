@@ -31,22 +31,14 @@ class DirectoryEntry:
 
 
 DIRECTORY_ENTRIES = [
-    DirectoryEntry(0, "+84000000000", 0, "Unknown", "unknown"),
+    DirectoryEntry(0, "+84701234567", 0, "Unknown", "unknown"),
     DirectoryEntry(1, "+84961234567", 1, "Viettel", "verified_company"),
-    DirectoryEntry(2, "+84971234567", 1, "Viettel", "verified_company"),
-    DirectoryEntry(3, "+84981234567", 1, "Viettel", "verified_company"),
-    DirectoryEntry(4, "+84861234567", 1, "Viettel", "verified_company"),
-    DirectoryEntry(5, "+84911234567", 2, "VNPT/VinaPhone", "verified_company"),
-    DirectoryEntry(6, "+84941234567", 2, "VNPT/VinaPhone", "verified_company"),
-    DirectoryEntry(7, "+84881234567", 2, "VNPT/VinaPhone", "verified_company"),
-    DirectoryEntry(8, "+84901234567", 3, "MobiFone", "verified_company"),
-    DirectoryEntry(9, "+84931234567", 3, "MobiFone", "verified_company"),
-    DirectoryEntry(10, "+84891234567", 3, "MobiFone", "verified_company"),
-    DirectoryEntry(11, "+84921234567", 4, "Vietnamobile", "registered"),
-    DirectoryEntry(12, "+84991234567", 5, "Gmobile", "registered"),
-    DirectoryEntry(13, "+84241234567", 6, "Hanoi Landline", "registered"),
-    DirectoryEntry(14, "+84281234567", 7, "HCMC Landline", "registered"),
-    DirectoryEntry(15, "+84701234567", 8, "Other Registered", "registered"),
+    DirectoryEntry(2, "+84911234567", 2, "VNPT/VinaPhone", "verified_company"),
+    DirectoryEntry(3, "+84901234567", 3, "MobiFone", "verified_company"),
+    DirectoryEntry(4, "+84921234567", 4, "Vietnamobile", "registered"),
+    DirectoryEntry(5, "+84991234567", 5, "Gmobile", "registered"),
+    DirectoryEntry(6, "+84241234567", 6, "Hanoi Landline", "registered"),
+    DirectoryEntry(7, "+84281234567", 7, "HCMC Landline", "registered"),
 ]
 
 

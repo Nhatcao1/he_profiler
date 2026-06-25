@@ -15,7 +15,6 @@ It sends:
 
 ```text
 encrypted lookup_slot
-BinFHE context/config
 BinFHE evaluation key
 ```
 
@@ -56,7 +55,6 @@ After the server writes `response_ct.bin`:
 
 ```bash
 client/build/decrypt_response \
-  --context client/outgoing/context.bin \
   --secret-key client/private/secret_key.bin \
   --response-ct client/incoming/response_ct.bin
 ```

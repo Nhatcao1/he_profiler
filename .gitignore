@@ -12,6 +12,7 @@ server/incoming/*
 server/outgoing/*
 server/db/*.sqlite
 server/db/*.sqlite-*
+logs/*
 
 !client/incoming/.gitkeep
 !client/outgoing/.gitkeep
@@ -19,6 +20,7 @@ server/db/*.sqlite-*
 !server/incoming/.gitkeep
 !server/outgoing/.gitkeep
 !server/db/.gitkeep
+!logs/.gitkeep
 
 __pycache__/
 .DS_Store

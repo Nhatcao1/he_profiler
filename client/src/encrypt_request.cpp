@@ -33,21 +33,14 @@ std::string normalize_phone(const std::string& phone_number) {
 
 int lookup_slot_for_phone(const std::string& phone_number) {
     const std::string digits = normalize_phone(phone_number);
-    if (digits == "84961234567") return 1;
-    if (digits == "84971234567") return 2;
-    if (digits == "84981234567") return 3;
-    if (digits == "84861234567") return 4;
-    if (digits == "84911234567") return 5;
-    if (digits == "84941234567") return 6;
-    if (digits == "84881234567") return 7;
-    if (digits == "84901234567") return 8;
-    if (digits == "84931234567") return 9;
-    if (digits == "84891234567") return 10;
-    if (digits == "84921234567") return 11;
-    if (digits == "84991234567") return 12;
-    if (digits == "84241234567") return 13;
-    if (digits == "84281234567") return 14;
-    if (digits == "84701234567") return 15;
+    if (digits == "84961234567") return 1;  // Viettel
+    if (digits == "84911234567") return 2;  // VNPT/VinaPhone
+    if (digits == "84901234567") return 3;  // MobiFone
+    if (digits == "84921234567") return 4;  // Vietnamobile
+    if (digits == "84991234567") return 5;  // Gmobile
+    if (digits == "84241234567") return 6;  // Hanoi Landline
+    if (digits == "84281234567") return 7;  // HCMC Landline
+    if (digits == "84701234567") return 0;  // Unknown/other demo bucket
     throw std::runtime_error("phone number is not in the tiny demo registry");
 }
 
@@ -123,8 +116,15 @@ void write_request_manifest(const CliArgs& args) {
       << "  \"scheme\": \"BinFHE\",\n"
       << "  \"flow\": \"private_company_lookup\",\n"
       << "  \"context_id\": \"" << args.context_id << "\",\n"
+      << "  \"context_params\": {\n"
+      << "    \"paramset\": \"TOY\",\n"
+      << "    \"method\": \"GINX\",\n"
+      << "    \"arbitrary_function\": true,\n"
+      << "    \"logQ\": 12,\n"
+      << "    \"ringDim\": 1024,\n"
+      << "    \"time_optimization\": false\n"
+      << "  },\n"
       << "  \"encrypted_input\": \"lookup_slot\",\n"
-      << "  \"context_file\": \"context.bin\",\n"
       << "  \"refresh_key_file\": \"refresh_key.bin\",\n"
       << "  \"switch_key_file\": \"switch_key.bin\",\n"
       << "  \"ciphertext_file\": \"request_ct.bin\"\n"
@@ -144,32 +144,34 @@ int main(int argc, char** argv) {
         using lbcrypto::GINX;
         using lbcrypto::LARGE_DIM;
         using lbcrypto::LWEPlaintext;
-        using lbcrypto::STD128;
+        using lbcrypto::TOY;
 
-        constexpr std::uint32_t kRingDim = 4096;
+        constexpr std::uint32_t kRingDim = 1024;
         constexpr std::uint32_t kLogQ = 12;
 
         std::cout << "[client] preparing one encrypted lookup request\n";
         std::cout << "[client] phone_number stays local: " << args.phone_number << "\n";
         std::cout << "[client] mapped phone_number to a local demo lookup slot\n";
         std::cout << "[client-report] context_id=" << args.context_id << "\n";
-        std::cout << "[client-report] binfhe_paramset=STD128 method=GINX arbitrary_function=true logQ="
+        std::cout << "[client-report] binfhe_paramset=TOY method=GINX arbitrary_function=true logQ="
                   << kLogQ << " ringDim=" << kRingDim << "\n";
-        std::cout << "[client-report] server_receives=context.bin,refresh_key.bin,switch_key.bin,request_ct.bin,request.json\n";
+        std::cout << "[client-report] context_recreated_from_params=true\n";
+        std::cout << "[client-report] server_receives=refresh_key.bin,switch_key.bin,request_ct.bin,request.json\n";
         std::cout << "[client-report] client_keeps_private=phone_number,lookup_slot,secret_key.bin,decrypted_result\n";
         std::cout << "[client] generating BinFHE context\n";
         BinFHEContext cc;
-        cc.GenerateBinFHEContext(STD128, true, kLogQ, kRingDim, GINX, false);
+        cc.GenerateBinFHEContext(TOY, true, kLogQ, kRingDim, GINX, false);
 
         std::cout << "[client] generating secret key and bootstrapping keys\n";
         auto secret_key = cc.KeyGen();
         cc.BTKeyGen(secret_key);
 
         const auto plaintext_modulus = cc.GetMaxPlaintextSpace().ConvertToInt();
-        if (plaintext_modulus < 16) {
-            throw std::runtime_error("BinFHE plaintext modulus is smaller than 16");
+        if (plaintext_modulus < 8) {
+            throw std::runtime_error(
+                "BinFHE plaintext modulus is smaller than 8: " + std::to_string(plaintext_modulus));
         }
-        std::cout << "[client-report] plaintext_modulus=" << plaintext_modulus << " lookup_slot_domain=0..15\n";
+        std::cout << "[client-report] plaintext_modulus=" << plaintext_modulus << " lookup_slot_domain=0..7\n";
 
         std::cout << "[client] encrypting lookup slot\n";
         auto ct = cc.Encrypt(
@@ -178,9 +180,6 @@ int main(int argc, char** argv) {
             LARGE_DIM,
             plaintext_modulus);
 
-        if (!lbcrypto::Serial::SerializeToFile((args.outgoing_dir / "context.bin").string(), cc, lbcrypto::SerType::BINARY)) {
-            throw std::runtime_error("failed to serialize context.bin");
-        }
         if (!lbcrypto::Serial::SerializeToFile((args.outgoing_dir / "refresh_key.bin").string(), cc.GetRefreshKey(), lbcrypto::SerType::BINARY)) {
             throw std::runtime_error("failed to serialize refresh_key.bin");
         }
@@ -201,7 +200,6 @@ int main(int argc, char** argv) {
         std::cout << "lookup slot encrypted; plaintext phone number is not written to request artifacts\n";
         std::cout << "[client-report] encrypted_payload=request_ct.bin=Enc(lookup_slot)\n";
         std::cout << "[client] outgoing artifacts for server:\n";
-        print_artifact("  context", args.outgoing_dir / "context.bin");
         print_artifact("  refresh_key", args.outgoing_dir / "refresh_key.bin");
         print_artifact("  switch_key", args.outgoing_dir / "switch_key.bin");
         print_artifact("  request_ct", args.outgoing_dir / "request_ct.bin");

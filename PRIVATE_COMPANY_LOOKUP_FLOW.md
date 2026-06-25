@@ -34,9 +34,9 @@ Server does not see:
 ## Tiny First Demo
 
 ```text
-directory size: 16 rows
-lookup_slot domain: 0..15
-company_code domain: 0..8
+directory size: 8 rows
+lookup_slot domain: 0..7
+company_code domain: 0..7
 ```
 
 For the first demo, the client maps:
@@ -58,13 +58,14 @@ sequenceDiagram
     C->>C: Generate BinFHE/OpenFHE context
     C->>C: Generate secret key
     C->>C: Generate public/evaluation key material
-    C->>S: Send context + public/evaluation key
+    C->>S: Send public/evaluation key
+    S->>S: Recreate BinFHE/OpenFHE context from agreed params
 
     S->>S: Load company_directory.sqlite
     S->>S: Build lookup function lookup_slot -> company_code
 
     C->>C: Read phone_number
-    C->>C: Map phone_number -> lookup_slot 0..15
+    C->>C: Map phone_number -> lookup_slot 0..7
     C->>C: Encrypt lookup_slot => Enc(lookup_slot)
     C->>S: Send Enc(lookup_slot)
 
@@ -81,7 +82,7 @@ sequenceDiagram
 
 ```mermaid
 flowchart TD
-    PHONE[phone_number on client] --> MAP[client maps to lookup_slot 0..15]
+    PHONE[phone_number on client] --> MAP[client maps to lookup_slot 0..7]
     MAP --> ENC[encrypt lookup_slot]
     ENC --> CTQ[Enc lookup_slot]
 
@@ -102,15 +103,22 @@ flowchart TD
   "scheme": "BinFHE",
   "flow": "private_company_lookup",
   "context_id": "synthetic-v1",
+  "context_params": {
+    "paramset": "TOY",
+    "method": "GINX",
+    "arbitrary_function": true,
+    "logQ": 12,
+    "ringDim": 1024,
+    "time_optimization": false
+  },
   "encrypted_input": "lookup_slot",
   "ciphertext_file": "request_ct.bin"
 }
 ```
 
-Key/context files sent or pre-shared:
+Context params are pre-agreed/recreated. Key files sent:
 
 ```text
-context.bin
 refresh_key.bin
 switch_key.bin
 ```
@@ -161,7 +169,7 @@ exact_match = plain_company_code == he_company_code
 ## First Implementation Milestones
 
 ```text
-1. Keep directory at 16 rows.
+1. Keep directory at 8 rows.
 2. Build plaintext lookup_slot -> company_code LUT.
 3. Client keygen + encrypt one lookup_slot.
 4. Server EvalFunc over encrypted lookup_slot.

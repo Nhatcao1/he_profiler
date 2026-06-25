@@ -15,12 +15,12 @@
 namespace {
 
 struct CliArgs {
-    std::filesystem::path context_path = "client/outgoing/context.bin";
     std::filesystem::path secret_key_path = "client/private/secret_key.bin";
     std::filesystem::path response_ct_path = "client/incoming/response_ct.bin";
+    std::string context_id = "synthetic-v1";
 };
 
-constexpr std::array<const char*, 9> kCompanyNames = {
+constexpr std::array<const char*, 8> kCompanyNames = {
     "Unknown",
     "Viettel",
     "VNPT/VinaPhone",
@@ -29,7 +29,6 @@ constexpr std::array<const char*, 9> kCompanyNames = {
     "Gmobile",
     "Hanoi Landline",
     "HCMC Landline",
-    "Other Registered",
 };
 
 CliArgs parse_args(int argc, char** argv) {
@@ -41,7 +40,7 @@ CliArgs parse_args(int argc, char** argv) {
             if (++i >= argc) {
                 throw std::runtime_error("--context requires a path");
             }
-            args.context_path = argv[i];
+            std::cout << "[client] --context is ignored; context is recreated from agreed params\n";
         } else if (flag == "--secret-key") {
             if (++i >= argc) {
                 throw std::runtime_error("--secret-key requires a path");
@@ -52,6 +51,11 @@ CliArgs parse_args(int argc, char** argv) {
                 throw std::runtime_error("--response-ct requires a path");
             }
             args.response_ct_path = argv[i];
+        } else if (flag == "--context-id") {
+            if (++i >= argc) {
+                throw std::runtime_error("--context-id requires a value");
+            }
+            args.context_id = argv[i];
         } else {
             throw std::runtime_error("unknown argument: " + flag);
         }
@@ -99,19 +103,25 @@ int main(int argc, char** argv) {
 
 #ifdef HE_PROFILER_WITH_OPENFHE
         using lbcrypto::BinFHEContext;
+        using lbcrypto::GINX;
         using lbcrypto::LWECiphertext;
         using lbcrypto::LWEPlaintext;
         using lbcrypto::LWEPrivateKey;
+        using lbcrypto::TOY;
 
-        std::cout << "[client] loading local context and secret key\n";
-        print_artifact("  context", args.context_path);
+        constexpr std::uint32_t kRingDim = 1024;
+        constexpr std::uint32_t kLogQ = 12;
+
+        std::cout << "[client] recreating local context and loading secret key\n";
+        std::cout << "[client-report] context_id=" << args.context_id << "\n";
+        std::cout << "[client-report] binfhe_paramset=TOY method=GINX arbitrary_function=true logQ="
+                  << kLogQ << " ringDim=" << kRingDim << "\n";
+        std::cout << "[client-report] context_recreated_from_params=true\n";
         print_artifact("  secret_key", args.secret_key_path);
         print_artifact("  response_ct", args.response_ct_path);
 
         BinFHEContext cc;
-        if (!lbcrypto::Serial::DeserializeFromFile(args.context_path.string(), cc, lbcrypto::SerType::BINARY)) {
-            throw std::runtime_error("failed to deserialize context");
-        }
+        cc.GenerateBinFHEContext(TOY, true, kLogQ, kRingDim, GINX, false);
 
         std::cout << "[client] reading secret key; it never went to the server\n";
         LWEPrivateKey secret_key;

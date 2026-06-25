@@ -15,7 +15,6 @@ secret key.
 Send these from `client/outgoing/`:
 
 ```text
-context.bin
 refresh_key.bin
 switch_key.bin
 request_ct.bin
@@ -25,11 +24,10 @@ request.json
 Meaning:
 
 ```text
-context.bin       OpenFHE/BinFHE parameters
 refresh_key.bin   bootstrapping refresh key
 switch_key.bin    key switching key
 request_ct.bin    Enc(lookup_slot)
-request.json      request metadata
+request.json      request metadata and context params
 ```
 
 Do not send:
@@ -92,7 +90,6 @@ Send encrypted request artifacts:
 
 ```bash
 rsync -av \
-  client/outgoing/context.bin \
   client/outgoing/refresh_key.bin \
   client/outgoing/switch_key.bin \
   client/outgoing/request_ct.bin \
@@ -123,7 +120,6 @@ Decrypt locally:
 
 ```bash
 client/build/decrypt_response \
-  --context client/outgoing/context.bin \
   --secret-key client/private/secret_key.bin \
   --response-ct client/incoming/response_ct.bin
 ```
@@ -137,7 +133,6 @@ client/build/encrypt_request \
   --private client/private
 
 rsync -av \
-  client/outgoing/context.bin \
   client/outgoing/refresh_key.bin \
   client/outgoing/switch_key.bin \
   client/outgoing/request_ct.bin \
@@ -156,7 +151,6 @@ rsync -av root@100.84.97.118:~/he_profiler/server/outgoing/response.json \
   client/incoming/
 
 client/build/decrypt_response \
-  --context client/outgoing/context.bin \
   --secret-key client/private/secret_key.bin \
   --response-ct client/incoming/response_ct.bin
 ```
@@ -165,7 +159,6 @@ client/build/decrypt_response \
 
 ```text
 Do send:
-  context.bin
   refresh_key.bin
   switch_key.bin
   request_ct.bin

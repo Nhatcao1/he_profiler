@@ -22,7 +22,7 @@ This is not full private search over arbitrary phone numbers.
 
 ```text
 Supported now:
-  phone_number on client -> local lookup_slot 0..15
+  phone_number on client -> local lookup_slot 0..7
   Enc(lookup_slot) -> BinFHE LUT -> Enc(company_code)
 
 Not supported in this tiny demo:
@@ -66,7 +66,7 @@ server: OpenFHE for ciphertext deserialization and EvalFunc LUT calculation
 2. Client selects one plaintext phone_number.
 3. Client maps phone_number to a local demo lookup_slot.
 4. Client encrypts lookup_slot.
-5. Client sends Enc(lookup_slot), context, and eval key.
+5. Client sends Enc(lookup_slot) and eval key material.
 6. Server computes Enc(lookup_slot) -> Enc(company_code).
 7. Server returns Enc(company_code).
 8. Client decrypts company_code and maps it to company_name locally.
@@ -122,13 +122,13 @@ queried when the input is encrypted.
 Input:
 
 ```text
-lookup_slot 0..15
+lookup_slot 0..7
 ```
 
 Output:
 
 ```text
-company_code 0..8
+company_code 0..7
 
 0 Unknown
 1 Viettel
@@ -138,7 +138,6 @@ company_code 0..8
 5 Gmobile
 6 Hanoi Landline
 7 HCMC Landline
-8 Other Registered
 ```
 
 ## Send Format
@@ -150,8 +149,15 @@ First file-based request shape:
   "scheme": "BinFHE",
   "flow": "private_company_lookup",
   "context_id": "synthetic-v1",
+  "context_params": {
+    "paramset": "TOY",
+    "method": "GINX",
+    "arbitrary_function": true,
+    "logQ": 12,
+    "ringDim": 1024,
+    "time_optimization": false
+  },
   "encrypted_input": "lookup_slot",
-  "context_file": "context.bin",
   "refresh_key_file": "refresh_key.bin",
   "switch_key_file": "switch_key.bin",
   "ciphertext_file": "request_ct.bin"
@@ -178,6 +184,9 @@ public evaluation or bootstrapping key material
 ciphertexts
 ```
 
+This demo recreates the OpenFHE context from `context_params` on both sides
+instead of sending `context.bin`.
+
 The secret key stays on the client.
 
 ## Current Scope
@@ -185,8 +194,8 @@ The secret key stays on the client.
 ```text
 Data model: synthetic company directory
 Encrypted primitive: BinFHE LUT only
-Input domain: lookup_slot 0..15
-Output domain: company_code 0..8
+Input domain: lookup_slot 0..7
+Output domain: company_code 0..7
 No ML
 No CKKS
 No encrypted joins
@@ -249,7 +258,6 @@ Copy or mount `server/outgoing/response_ct.bin` to `client/incoming/`, then decr
 
 ```bash
 client/build/decrypt_response \
-  --context client/outgoing/context.bin \
   --secret-key client/private/secret_key.bin \
   --response-ct client/incoming/response_ct.bin
 ```

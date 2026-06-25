@@ -23,7 +23,7 @@ flowchart TD
     LUT --> EVAL
     EVAL --> OUT[Enc company_code]
     OUT --> DEC[Client decrypts]
-    DEC --> CODE[company_code 0..8]
+    DEC --> CODE[company_code 0..7]
     CODE --> NAME[company_name local display]
 ```
 
@@ -32,7 +32,7 @@ flowchart TD
 ```text
 Client sends to server:
   Enc(lookup_slot)
-  BinFHE context/config
+  context params in request.json
   BinFHE evaluation key
 
 Server returns to client:
@@ -57,6 +57,7 @@ full lookup_slot -> company_code LUT
 encrypted input ciphertext
 encrypted output ciphertext
 public/evaluation key material
+recreated BinFHE context from request params
 ```
 
 The server does not see which directory row was queried because it never sees
@@ -83,5 +84,4 @@ company_code:
   5 Gmobile
   6 Hanoi Landline
   7 HCMC Landline
-  8 Other Registered
 ```

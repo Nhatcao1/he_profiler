@@ -14,25 +14,17 @@
 
 namespace {
 
-constexpr int kDomain = 16;
+constexpr int kDomain = 8;
 
 constexpr std::array<int, kDomain> kCompanyByDirectoryCode = {
     0,  // unknown
     1,  // Viettel
-    1,  // Viettel
-    1,  // Viettel
-    1,  // Viettel
     2,  // VNPT/VinaPhone
-    2,  // VNPT/VinaPhone
-    2,  // VNPT/VinaPhone
-    3,  // MobiFone
-    3,  // MobiFone
     3,  // MobiFone
     4,  // Vietnamobile
     5,  // Gmobile
     6,  // Hanoi Landline
     7,  // HCMC Landline
-    8,  // Other Registered
 };
 
 struct CliArgs {
@@ -43,7 +35,7 @@ struct CliArgs {
 
 int company_code_plain(int lookup_slot) {
     if (lookup_slot < 0 || lookup_slot >= kDomain) {
-        throw std::runtime_error("lookup_slot must be in 0..15");
+        throw std::runtime_error("lookup_slot must be in 0..7");
     }
     return kCompanyByDirectoryCode[lookup_slot];
 }
@@ -143,17 +135,24 @@ int main(int argc, char** argv) {
 
 #ifdef HE_PROFILER_WITH_OPENFHE
         using lbcrypto::BinFHEContext;
+        using lbcrypto::GINX;
         using lbcrypto::LWECiphertext;
         using lbcrypto::LWESwitchingKey;
         using lbcrypto::RingGSWBTKey;
         using lbcrypto::RingGSWACCKey;
+        using lbcrypto::TOY;
+
+        constexpr std::uint32_t kRingDim = 1024;
+        constexpr std::uint32_t kLogQ = 12;
 
         std::cout << "[server] reading encrypted request artifacts from " << args.incoming_dir << "\n";
         std::cout << "[server-report] context_id=" << args.context_id << "\n";
-        std::cout << "[server-report] server_receives=context.bin,refresh_key.bin,switch_key.bin,request_ct.bin,request.json\n";
+        std::cout << "[server-report] binfhe_paramset=TOY method=GINX arbitrary_function=true logQ="
+                  << kLogQ << " ringDim=" << kRingDim << "\n";
+        std::cout << "[server-report] context_recreated_from_params=true\n";
+        std::cout << "[server-report] server_receives=refresh_key.bin,switch_key.bin,request_ct.bin,request.json\n";
         std::cout << "[server-report] server_does_not_receive=phone_number,lookup_slot,secret_key.bin\n";
         std::cout << "[server-report] encrypted_payload=request_ct.bin=Enc(lookup_slot)\n";
-        print_artifact("  context", args.incoming_dir / "context.bin");
         print_artifact("  refresh_key", args.incoming_dir / "refresh_key.bin");
         print_artifact("  switch_key", args.incoming_dir / "switch_key.bin");
         print_artifact("  request_ct", args.incoming_dir / "request_ct.bin");
@@ -161,11 +160,9 @@ int main(int argc, char** argv) {
             print_artifact("  request_manifest", args.incoming_dir / "request.json");
         }
 
-        std::cout << "[server] deserializing BinFHE context\n";
+        std::cout << "[server] recreating BinFHE context from agreed params\n";
         BinFHEContext cc;
-        if (!lbcrypto::Serial::DeserializeFromFile((args.incoming_dir / "context.bin").string(), cc, lbcrypto::SerType::BINARY)) {
-            throw std::runtime_error("failed to deserialize context.bin");
-        }
+        cc.GenerateBinFHEContext(TOY, true, kLogQ, kRingDim, GINX, false);
 
         std::cout << "[server] loading bootstrapping key material\n";
         RingGSWACCKey refresh_key;
@@ -192,7 +189,7 @@ int main(int argc, char** argv) {
         std::cout << "[server] generating company lookup LUT\n";
         const auto plaintext_modulus = cc.GetMaxPlaintextSpace();
         std::cout << "[server-report] plaintext_modulus=" << plaintext_modulus.ConvertToInt()
-                  << " lookup_slot_domain=0..15 company_code_domain=0..8\n";
+                  << " lookup_slot_domain=0..7 company_code_domain=0..7\n";
         std::cout << "[server-report] lut_semantics=lookup_slot_to_company_code\n";
         auto lut = cc.GenerateLUTviaFunction(company_lut_function, plaintext_modulus);
         std::cout << "[server] evaluating LUT on ciphertext; plaintext query remains hidden\n";
